@@ -68,11 +68,13 @@ def main():
 
         len_string = len(string_bytes)
 
-        print("Número de bytes a serem enviados: {0}".format(len_string))
+        print("Bytes que serão enviados com o separador:{0} ".format(string_bytes))
+
+        print("Número de bytes a serem enviados: {0} ".format(len_string))
 
         print("Vou enviar essa quantidade de comandos:{0}".format(len(txBufferComandos)))
        
-        print("Vou começar com um CABEÇALHO para estabelecer a comunicação, assim, mandar o número de comandos")
+        print("Vou começar com um CABEÇALHO para estabelecer a comunicação, assim, mandar o número de comandos \n")
 
         # ------------------------------------------------------------------------------------------------------
 
@@ -109,6 +111,16 @@ def main():
 
         print("Resposta recebida pelo servidor:"+ str(rxBufferResposta)+" Tamanho da informação:" + str(nRxResposta))
         #Vamos ver agora se o que foi recebido (PS: contém os bytes a mais que são os separadores)
+
+        #------------------------------------------------------------------------------------------------
+
+        #Agora sim, conferir os dados tratados no servidor e comparar
+        print("Vamos receber o número de comandos que o server recebeu")
+        rxNumeroComandos, nRxComandos = com1.getData(1)
+        rxComandosResposta = int.from_bytes(rxNumeroComandos, byteorder="big")
+
+        if rxComandosResposta == len(txBufferComandos):
+            print("Número de comandos que foram recebidos pelo servidor:{0}".format(rxComandosResposta))
 
         tempo_final = time.time()
         tempo_total = tempo_final - cronometro_client

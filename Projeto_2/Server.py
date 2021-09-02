@@ -87,7 +87,16 @@ def main():
 
         print("Comandos recebidos:{0}".format(lista_comandos_recebidos))
         print("Número de comandos recebidos:{0}".format(numero_comandos))
-        
+
+        #-------------------------------------------------------------------------------------------
+
+        # Mandando o número de comandos de volta para o cliente
+        rxNumeroComandos = numero_comandos.to_bytes(1, byteorder="big")
+        time.sleep(0.5)
+        com2.sendData(np.asarray(rxNumeroComandos))
+
+        print("Tudo OK!")
+
         tempo_final = time.time()
         tempo_total = tempo_final - tempo_inicial
         velocidade = lenRx/ tempo_total
