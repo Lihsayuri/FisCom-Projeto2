@@ -10,6 +10,7 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 import random
 import time
+from typing import Text
 from enlace import *
 import time
 import numpy as np
@@ -40,69 +41,54 @@ def main():
         # Contabilizando o tempo inicial
         cronometro_client = time.time()
 
+        my_str = "hello world"
+        my_str_as_bytes = str.encode(my_str)
+        handshake_message = my_str_as_bytes
 
-        # Os bytes que serão enviados em uma string de bytes, que possuem b'\xaa como separadores
-        txBuffer = string_bytes
-
-        len_string = len(string_bytes)
-
-        print("Bytes que serão enviados com o separador:{0} ".format(string_bytes))
-
-        print("Número de bytes a serem enviados: {0} ".format(len_string))
-
-        print("Vou enviar essa quantidade de comandos:{0}".format(len(txBufferComandos)))
-       
-        print("Vou começar com um CABEÇALHO para estabelecer a comunicação, assim, mandar o número de comandos \n")
+        print("Primeira mensagem em bytes que será enviada para o server: {0}".format(handshake_message))
+        print(len(handshake_message))
 
         # ------------------------------------------------------------------------------------------------------
 
-        # Esse é o cabeçalho, quando serão enviados 2 bytes para o Server para iniciar essa comunicação. 
-        # Esses dois bytes enviados no começo são o número total de bytes a serem enviados
+        #Handshake a ser estabelecido entre Client e Server
+        
+        TentarNovamente = True
+
+        while TentarNovamente:
+            print("Handshake pelo cliente sendo enviado em alguns segundos... \n")
+
+            com1.sendData(np.asarray(handshake_message))
+
+            print("Aguardando a confirmação do Server")
+
+            rxBufferHandshake, rxnHandshake = com1.getData(11)
+
+            time.sleep(5)
 
 
-        # Antes vamos começar a transformando esse tamanho decimal em bytes, que são lidos da esquerda para direita.
-        txBufferInicial = len_string.to_bytes(2, byteorder="big")
+            if handshake_message == rxBufferHandshake:
+                print("Handshake feito com sucesso!")
+                print("O server recebeu o mesmo que foi enviado pelo client: {0}".format(rxBufferHandshake))
+                com1.sendData(b't')
 
-        #Agora vou mandar esses dois bytes com a função send, lembrando que precisa ser em array!
-        com1.sendData(np.asarray(txBufferInicial))
+                TentarNovamente = False
+            else:
+                print("Xii... parece que falhou!")
+                resposta = input("Quer tentar novamente? Y/N ")
+                if resposta == "Y":
+                    com1.sendData(b'Y')
+                    TentarNovamente = True
+                else: 
+                    TentarNovamente = False
 
         #------------------------------------------------------------------------------------
 
-        #HANDSHAKE
 
-        print("Agora o Handshake será feito em alguns instantes ....")
-
-        # Recebendo de volta os dois bytes que enviei para conferir
-        rxBufferInicial, nRx = com1.getData(2)
-
-        if txBufferInicial == rxBufferInicial:
-            print("Deu certo! Handshake pronto!")
-
-            print("Agora simm! Dados sendo transmitidos para o servidor")
-            com1.sendData(txBuffer)
-
-            print("Aguardando confirmação do envio...")
-
-            # Conferindo de volta todos os bytes que foram enviados
-            rxBufferResposta, nRxResposta = com1.getData(len_string)
-
-
-        print("Resposta recebida pelo servidor:"+ str(rxBufferResposta)+" Tamanho da informação:" + str(nRxResposta))
-        #Vamos ver agora se o que foi recebido (PS: contém os bytes a mais que são os separadores)
-
-        #------------------------------------------------------------------------------------------------
-
-        #Agora sim, conferir os dados tratados no servidor e comparar
-        print("Vamos receber o número de comandos que o server recebeu")
-        rxNumeroComandos, nRxComandos = com1.getData(1)
-        rxComandosResposta = int.from_bytes(rxNumeroComandos, byteorder="big")
-
-        if rxComandosResposta == len(txBufferComandos):
-            print("Número de comandos que foram recebidos pelo servidor:{0}".format(rxComandosResposta))
-
+        
+ 
         tempo_final = time.time()
         tempo_total = tempo_final - cronometro_client
-        velocidade = len(txBuffer)/tempo_total
+        # velocidade = len(txBuffer)/tempo_total
 
         print("-------------------------")
         print("Comunicação encerrada")

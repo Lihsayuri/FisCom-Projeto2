@@ -49,64 +49,43 @@ def main():
         print("Comunicação aberta com sucesso!")
 
         # -----------------------------------------------------------------------------------------------
-        # CABEÇALHO E HANDSHAKE
+        # HANDSHAKE
         
-        print("Vamos estabelecer o CABEÇALHO com o Client")
+        TentarNovamente = True
 
-        # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de bytes
-        rxBufferInicial, nRxInicial = com2.getData(2)  
+        while TentarNovamente:
+            print("Vamos estabelecer o Handshake com o Client")
 
-        # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
-        rxBufferResposta = int.from_bytes(rxBufferInicial, "big")
-        print("Cabeçalho recebidooo!")
+            # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de bytes
+            txBufferHandshake, tRxHandshake = com2.getData(11)  
+            #testeFalha = b'hello worlyd'
 
-        print("Agora servidor está enviando o Handshake")
-        com2.sendData(np.asarray(rxBufferInicial))
-        print("Handshake feito!")
+            # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
+            print("Cabeçalho recebidooo!")
 
-        #------------------------------------------------------------------------------------
+            print("Agora servidor está enviando o Handshake de volta para o client")
+            com2.sendData(np.asarray(txBufferHandshake))
 
-        print("Esperando os dados do cliente")
-        rxBuffer, nRx = com2.getData(rxBufferResposta)
-        print("Dados do cliente recebidos com sucesso, TOTAL DE DADOS: {0}".format(rxBufferResposta))
+            txYesBuffer, ntxYesBuffer = com2.getData(1)
 
-        com2.sendData((rxBuffer))
-        lenRx = nRx
-        print("Informação recebida:{0}".format(rxBuffer))
-        print("Foram recebidos {0} bytes".format(nRx))
+            if txYesBuffer == b'Y':
+                TentarNovamente = True
 
-        #-------------------------------------------------------------------------------------
+            if txYesBuffer == b't':
+                TentarNovamente = False
+                print("Handshake feito!")
+                print("Mensagem recebida do Client: {0}".format(txBufferHandshake))
         
-        # Agora vamos tratar a informação recebida para identificar quais são os comandos e o número total deles
-        lista_comandos_recebidos= rxBuffer.split(b'\xaa')
-        #Deletando o último termo da lista que terminou com o separador e que não é comando
-        del lista_comandos_recebidos[-1]
-        #Lista que de fato são os comandos enviados
-        numero_comandos = len(lista_comandos_recebidos)
-
-
-        print("Comandos recebidos:{0}".format(lista_comandos_recebidos))
-        print("Número de comandos recebidos:{0}".format(numero_comandos))
-
-        #-------------------------------------------------------------------------------------------
-
-        # Mandando o número de comandos de volta para o cliente
-        rxNumeroComandos = numero_comandos.to_bytes(1, byteorder="big")
-        time.sleep(0.5)
-        com2.sendData(np.asarray(rxNumeroComandos))
-
-        print("Mandando de volta o número de comandos para o Client")
-        print("Tudo OK!")
 
         tempo_final = time.time()
         tempo_total = tempo_final - tempo_inicial
-        velocidade = lenRx/ tempo_total
+        # velocidade = lenRx/ tempo_total
 
         # Encerra comunicação
         print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
-        print("Velocidade: {0}".format(velocidade))
+        # print("Velocidade: {0}".format(velocidade))
         com2.disable()
     
     except Exception as erro:
