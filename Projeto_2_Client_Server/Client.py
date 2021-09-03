@@ -120,7 +120,7 @@ def main():
         rxComandosResposta = int.from_bytes(rxNumeroComandos, byteorder="big")
 
         if rxComandosResposta == len(txBufferComandos):
-            print("Número de comandos que foram recebidos pelo servidor:{0}".format(rxComandosResposta))
+            print("Número de comandos que foram recebidos pelo servidor é o mesmo que foi enviado pelo client:{0}".format(rxComandosResposta))
 
         tempo_final = time.time()
         tempo_total = tempo_final - cronometro_client
