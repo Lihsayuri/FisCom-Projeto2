@@ -11,11 +11,15 @@
 import random
 import time
 from typing import Text
+from math import ceil  #arredonda uma número para cima
+
+from numpy.core.fromnumeric import size
 from enlace import *
 import time
 import numpy as np
 from PIL import Image
 import io
+import math
 
 # voce deverá descomentar e configurar a porta com através da qual irá fazer comunicação
 #   para saber a sua porta, execute no terminal :
@@ -41,7 +45,7 @@ def main():
         # Contabilizando o tempo inicial
         cronometro_client = time.time()
 
-        my_str = "hello world"
+        my_str = "helloworld"
         my_str_as_bytes = str.encode(my_str)
         handshake_message = my_str_as_bytes
 
@@ -55,16 +59,15 @@ def main():
         TentarNovamente = True
 
         while TentarNovamente:
-            print("Handshake pelo cliente sendo enviado em alguns segundos... \n")
+            print("Handshake pelo client sendo enviado em alguns segundos... \n")
 
             com1.sendData(np.asarray(handshake_message))
 
             print("Aguardando a confirmação do Server")
 
-            rxBufferHandshake, rxnHandshake = com1.getData(11)
+            rxBufferHandshake, rxnHandshake = com1.getData(10)
 
             time.sleep(5)
-
 
             if handshake_message == rxBufferHandshake:
                 print("Handshake feito com sucesso!")
@@ -73,18 +76,88 @@ def main():
 
                 TentarNovamente = False
             else:
-                print("Xii... parece que falhou!")
-                resposta = input("Quer tentar novamente? Y/N ")
-                if resposta == "Y":
-                    com1.sendData(b'Y')
+                print("Servidor inativo")
+                resposta = input("Tentar novamente? S/N ")
+                if resposta == "S":
+                    com1.sendData(b'S')
                     TentarNovamente = True
                 else: 
                     TentarNovamente = False
+                    com1.sendData(b'N')
+                    print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
+
 
         #------------------------------------------------------------------------------------
 
+        # DATAGRAMA
 
+        Head = b'HEAD/Sayti'
+        print(Head) 
+        EOP = b'\x00\x00\x00\x01'
+        print(EOP)
+
+        #------- Definindo Payload ---------
+
+        # Payload = "Uns, com os olhos postos no passado, Veem o que nao veem; outros, fitos Os mesmos olhos no futuro, veem O que nao se pode ver. Porque tao longe ir por o que esta perto A seguranca nossa Este e o dia, Esta e a hora, este o momento, isto E quem somos, e e tudo. Perene flui a interminavel hora Que nos confessa nulos. No mesmo hausto Em que vivemos, morreremos. Colhe O dia, porque es ele."
+        filepath = "./payload.txt"
+        sizePayload = 114 
+
+        packageList = []
+        with open(filepath, "rb") as file:
+            binRead = file.read()
+            binArray = bytearray(binRead)
+            lenPacks = (len(binArray)/sizePayload)
+            for i in range(0, int(ceil(lenPacks))):
+                packageList.append(binArray[:sizePayload])
+                del(binArray[:sizePayload])
+                #lê, apenda e tira!
+                
+        print(packageList)
+
+        datagramas = []
+        for i in range(len(packageList)):
+            lenPacks_bin = len(packageList).to_bytes(1, byteorder="big")
+            currentPacks = (i+1).to_bytes(1, byteorder="big")
+            Head = b'HEAD' + currentPacks + b'/' + lenPacks_bin + b'\x00\x00\x00'
+            string_bytes_pack = Head+packageList[i]+EOP
+            datagramas.append(string_bytes_pack)
         
+        print(datagramas)
+
+        #-----------------------------------------------------------------------------------------------------
+
+        #Comunicação para envio de datagramas
+
+        EnvioNaoCompleto = True
+
+        while EnvioNaoCompleto:
+
+            print("Pacote será enviado em alguns segundos... \n")
+
+            for n in range(len(datagramas)):
+
+                numeroBytesPack = len(datagramas[n]).to_bytes(2, byteorder="big")
+                com1.sendData(np.asarray(numeroBytesPack))
+
+                rxBufferPackSize, rxnPackSize = com1.getData(2)
+
+                if rxBufferPackSize == numeroBytesPack:
+                    lenBytesPack = len(datagramas[n])
+                    print("Vamos transmitir {0} bytes".format(lenBytesPack))
+
+                    com1.sendData(np.asarray(datagramas[n]))
+
+                    rxBufferPack, rxnBufferPack = com1.getData(lenBytesPack)
+
+                    if rxBufferPack == datagramas[n]:
+                        print("pacotes iguais")
+
+                  
+
+
+
+
+
  
         tempo_final = time.time()
         tempo_total = tempo_final - cronometro_client
@@ -96,6 +169,27 @@ def main():
 
         com1.disable()
     
+
+    #Separando o número de pacotes
+
+    # frac, whole = math.modf(len(payload_as_bytes)/sizePayload)
+    
+    # if frac > 0:
+    #     numPacks = round(whole + 1)
+    # else:
+    #     numPacks = round(whole)
+
+    # lista_packs = []
+    # for i in range(numPacks):
+    #     pack = b''
+    #     for j in range(0,sizePayload):
+    #         print(payload_as_bytes[j])
+    #         pack += payload_as_bytes[j]
+    #     datagrama = Head + pack + EOP
+    #     lista_packs.append(datagrama)
+            
+    # print(lista_packs)
+
     except Exception as erro:
         print("ops! :-\\")
         print(erro)

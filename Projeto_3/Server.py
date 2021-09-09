@@ -56,26 +56,61 @@ def main():
         while TentarNovamente:
             print("Vamos estabelecer o Handshake com o Client")
 
-            # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de bytes
-            txBufferHandshake, tRxHandshake = com2.getData(11)  
-            #testeFalha = b'hello worlyd'
+            # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
+            time.sleep(2)
+            txBufferHandshake, tRxHandshake = com2.getData(10)  
+            testeFalha = b'hello worlyd'
 
             # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
-            print("Cabeçalho recebidooo!")
+            print("Handshake recebidooo!")
 
             print("Agora servidor está enviando o Handshake de volta para o client")
             com2.sendData(np.asarray(txBufferHandshake))
 
             txYesBuffer, ntxYesBuffer = com2.getData(1)
 
-            if txYesBuffer == b'Y':
+            if txYesBuffer == b'S':
+                time.sleep(1)
                 TentarNovamente = True
 
             if txYesBuffer == b't':
                 TentarNovamente = False
                 print("Handshake feito!")
                 print("Mensagem recebida do Client: {0}".format(txBufferHandshake))
+            
+            if txYesBuffer == b'N':
+                TentarNovamente = False
+                print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
         
+        #----------------------------------------------------------------------------------------------------
+
+        # Receber os DATAGRAMASSS
+
+        EnvioNaoCompleto = True
+
+        while EnvioNaoCompleto:
+            print("Vamos estabelecer o recebimento dos datagramas com o Client!")
+
+            # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
+            time.sleep(2)
+            txPackSize, tRxNPackSize= com2.getData(2)  
+
+            rxBufferResposta = int.from_bytes(txPackSize, "big")
+
+            print("Agora servidor está enviando o número de bytes do pacote a ser recebido")
+
+            com2.sendData(np.asarray(txPackSize))
+
+            print("Mandei de novo o número de bytes que irei receber")
+
+            txPack, txnPack = com2.getData(rxBufferResposta)
+
+            com2.sendData(txPack)
+
+            print("Enviando o pacote recebido para o Client para conferir")
+
+
+        time.sleep(5)
 
         tempo_final = time.time()
         tempo_total = tempo_final - tempo_inicial
