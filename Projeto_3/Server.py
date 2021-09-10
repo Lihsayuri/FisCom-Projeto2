@@ -46,7 +46,7 @@ def main():
         #limpar tudo antes de começar a receber, às vezes ficam alguns vestígios de bits perdidos
         com2.fisica.flush()
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-        print("Comunicação aberta com sucesso!")
+        print("Comunicação aberta com sucesso!\n")
 
         # -----------------------------------------------------------------------------------------------
         # HANDSHAKE
@@ -54,40 +54,46 @@ def main():
         TentarNovamente = True
 
         while TentarNovamente:
+            print("-------------------------")
+            print("         HANDSHAKE        ")
+            print("-------------------------\n")
             print("Vamos estabelecer o Handshake com o Client")
 
             # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
-            time.sleep(2)
-            txBufferHandshake, tRxHandshake = com2.getData(10)  
-            testeFalha = b'hello worlyd'
+            txBufferHandshake, tRxHandshake = com2.getData(1)  
+            respostaServer = b'\x02'
+
+            txBufferHandshake = b'\xFF'
 
             # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
-            print("Handshake recebidooo!")
 
             print("Agora servidor está enviando o Handshake de volta para o client")
-            com2.sendData(np.asarray(txBufferHandshake))
 
-            txYesBuffer, ntxYesBuffer = com2.getData(1)
 
-            if txYesBuffer == b'S':
+            if txBufferHandshake == b'\x01':
                 time.sleep(1)
-                TentarNovamente = True
-
-            if txYesBuffer == b't':
+                com2.sendData(respostaServer)
+                print("Respondi o Handshake e posso começar a transmissão")
                 TentarNovamente = False
-                print("Handshake feito!")
-                print("Mensagem recebida do Client: {0}".format(txBufferHandshake))
             
-            if txYesBuffer == b'N':
-                TentarNovamente = False
-                print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
-        
+            # if txBufferHandshake == b'\xFF':
+            #     print("Deu tudo errado, vamos tentar novamente!")
+            #     TentarNovamente = True
+
+        print("Pronto para receber os pacotes\n")
+        # com2.getData(10)
         #----------------------------------------------------------------------------------------------------
 
         # Receber os DATAGRAMASSS
 
         EnvioNaoCompleto = True
 
+        nOldPackage = 0
+        dataReceived = []
+
+        print("------------------------------------------------")
+        print("         INICIANDO RECEBIMENTO DE PACOTES      ")
+        print("------------------------------------------------\n")
         while EnvioNaoCompleto:
             print("Vamos estabelecer o recebimento dos datagramas com o Client!")
 
@@ -95,22 +101,75 @@ def main():
             time.sleep(2)
             txPackSize, tRxNPackSize= com2.getData(2)  
 
-            rxBufferResposta = int.from_bytes(txPackSize, "big")
+            rxBufferResposta = int.from_bytes(txPackSize, byteorder ="big")
 
             print("Agora servidor está enviando o número de bytes do pacote a ser recebido")
 
             com2.sendData(np.asarray(txPackSize))
 
-            print("Mandei de novo o número de bytes que irei receber")
+            print("Mandei de novo o número de bytes que irei receber\n")
 
             txPack, txnPack = com2.getData(rxBufferResposta)
 
-            com2.sendData(txPack)
+            print("-----------------------------------")
+            print("        ANALISANDO PACOTES...    ")
+            print("-----------------------------------\n")
+            print("Pacote recebido:{0}\n".format(txPack))
 
-            print("Enviando o pacote recebido para o Client para conferir")
+            EOP = txPack[(rxBufferResposta-4):rxBufferResposta]
+            print("Esse é o EOP:{0}\n".format(EOP))
+            CurrentPack = txPack[4:5]
 
+            print("-------------------------\n")
+            print("Pacote atual:{0}".format(CurrentPack))
+            #nCurrentPack = int.from_bytes(CurrentPack, byteorder="big")
+            nCurrentPack = 2
+            print("Pacote atual em int:{0}\n".format(nCurrentPack))
+            TotalPacks = txPack[6:7]
+            nTotalPacks = int.from_bytes(TotalPacks, byteorder="big")
+            print("-------------------------\n")
 
-        time.sleep(5)
+            print("Número total de pacotes :{0}\n".format(nTotalPacks))
+
+            sinal_verde = b'\x0F'
+
+            if nCurrentPack == (nOldPackage + 1) and EOP == b'\x00\x00\x00\x01':
+                print("Pacote recebido está certo! Vou enviar o sinal verde: {0}".format(sinal_verde))
+                dataReceived.append(txPack)
+                com2.sendData(sinal_verde)
+                nOldPackage+= 1
+
+            if nCurrentPack == nTotalPacks and EOP == b'\x00\x00\x00\x01':
+                print("Recebi todos os pacotes!")
+                EnvioNaoCompleto = False
+
+            else:
+                print("Recebi o pacote errado!")
+                print("O Client vai ter que me enviar o mesmo pacote")
+                time.sleep(5)
+                print(CurrentPack)
+                com2.sendData(CurrentPack)
+
+            # o server deve enviar uma mensagem para o cliente solicitando o reenvio do pacote, seja por
+            # não ter o payload esperado, ou por não ser o pacote correto
+        
+        print("TODOS OS DADOS AQUI: {0}\n".format(dataReceived))
+
+        organizedData = b''
+
+        for j in range(len(dataReceived)):
+            currentByteStr = dataReceived[j]
+            lenCurrentByteStr = len(currentByteStr)
+            payload = currentByteStr[10:(lenCurrentByteStr-4)]
+            organizedData += payload
+
+        print(organizedData)
+
+        # encoding = 'utf-8'
+        # Criou o arquivoooooooo YAAAAAAAAAY
+        with open('receivedFile.txt','wb') as f:
+            f.write(organizedData)
+
 
         tempo_final = time.time()
         tempo_total = tempo_final - tempo_inicial

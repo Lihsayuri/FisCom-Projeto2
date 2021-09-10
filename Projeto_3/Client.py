@@ -14,7 +14,8 @@ from typing import Text
 from math import ceil  #arredonda uma número para cima
 
 from numpy.core.fromnumeric import size
-from enlace import *
+from enlaceClient import *
+from enlaceRxCLient import *
 import time
 import numpy as np
 from PIL import Image
@@ -45,9 +46,9 @@ def main():
         # Contabilizando o tempo inicial
         cronometro_client = time.time()
 
-        my_str = "helloworld"
-        my_str_as_bytes = str.encode(my_str)
-        handshake_message = my_str_as_bytes
+        # my_str = "helloworld"
+        # my_str_as_bytes = str.encode(my_str)
+        handshake_message = b'\x01'
 
         print("Primeira mensagem em bytes que será enviada para o server: {0}".format(handshake_message))
         print(len(handshake_message))
@@ -59,31 +60,39 @@ def main():
         TentarNovamente = True
 
         while TentarNovamente:
+            print("-------------------------")
+            print("         HANDSHAKE        ")
+            print("-------------------------\n")
             print("Handshake pelo client sendo enviado em alguns segundos... \n")
 
-            com1.sendData(np.asarray(handshake_message))
+            com1.sendData(handshake_message)
 
-            print("Aguardando a confirmação do Server")
+            time.sleep(0.1)
 
-            rxBufferHandshake, rxnHandshake = com1.getData(10)
+            print("Enviou: {0}".format(handshake_message))
+            print("Aguardando a confirmação do Server\n")
 
-            time.sleep(5)
+            print("Número de bytes enviados:{0}".format(com1.tx.transLen))
 
-            if handshake_message == rxBufferHandshake:
+            rxBufferHandshake, rxnHandshake = com1.getData(1)
+
+            initialTime = time.time()
+            
+            print("Recebeu o Handshake: {0}\n".format(rxBufferHandshake))
+
+            if rxBufferHandshake == b'\x02':
                 print("Handshake feito com sucesso!")
-                print("O server recebeu o mesmo que foi enviado pelo client: {0}".format(rxBufferHandshake))
-                com1.sendData(b't')
-
+                print("O server recebeu o byte: {0}".format(rxBufferHandshake))
+                print("Vamos iniciar a transmissao do pacote\n")
                 TentarNovamente = False
-            else:
+            # quando o server não responde, essa resposta é autogerada
+            if time.time() - initialTime == 5:
                 print("Servidor inativo")
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
-                    com1.sendData(b'S')
                     TentarNovamente = True
                 else: 
                     TentarNovamente = False
-                    com1.sendData(b'N')
                     print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
 
 
@@ -110,9 +119,7 @@ def main():
             for i in range(0, int(ceil(lenPacks))):
                 packageList.append(binArray[:sizePayload])
                 del(binArray[:sizePayload])
-                #lê, apenda e tira!
-                
-        print(packageList)
+                #lê, apenda e tira! 
 
         datagramas = []
         for i in range(len(packageList)):
@@ -121,8 +128,6 @@ def main():
             Head = b'HEAD' + currentPacks + b'/' + lenPacks_bin + b'\x00\x00\x00'
             string_bytes_pack = Head+packageList[i]+EOP
             datagramas.append(string_bytes_pack)
-        
-        print(datagramas)
 
         #-----------------------------------------------------------------------------------------------------
 
@@ -130,35 +135,45 @@ def main():
 
         EnvioNaoCompleto = True
 
-        while EnvioNaoCompleto:
+        # while EnvioNaoCompleto:
 
-            print("Pacote será enviado em alguns segundos... \n")
+        print("------------------------------------------")
+        print("         INICIANDO ENVIO DE PACOTES      ")
+        print("------------------------------------------\n")
+        print("Pacote será enviado em alguns segundos... \n")
 
-            for n in range(len(datagramas)):
+        for n in range(len(datagramas)):
 
-                numeroBytesPack = len(datagramas[n]).to_bytes(2, byteorder="big")
-                com1.sendData(np.asarray(numeroBytesPack))
+            numeroBytesPack = (len(datagramas[n])).to_bytes(2, byteorder="big")
+            com1.sendData(np.asarray(numeroBytesPack))
 
-                rxBufferPackSize, rxnPackSize = com1.getData(2)
+            print("------------------------------------------\n")
+            print("Enviei o número de bytes a serem transmitidos\n")
 
-                if rxBufferPackSize == numeroBytesPack:
-                    lenBytesPack = len(datagramas[n])
-                    print("Vamos transmitir {0} bytes".format(lenBytesPack))
+            rxBufferPackSize, rxnPackSize = com1.getData(2)
 
-                    com1.sendData(np.asarray(datagramas[n]))
+            if rxBufferPackSize == numeroBytesPack:
+                lenBytesPack = len(datagramas[n])
+                print("Vamos transmitir: {0} bytes".format(lenBytesPack))
 
-                    rxBufferPack, rxnBufferPack = com1.getData(lenBytesPack)
+                print("Quero mandar esse pacote: {0}\n".format(datagramas[n]))
 
-                    if rxBufferPack == datagramas[n]:
-                        print("pacotes iguais")
+                com1.sendData(np.asarray(datagramas[n]))
 
-                  
+                if n != len(datagramas):
+                    rxNextPack, rxnNextPack = com1.getData(1)
+                    if rxNextPack == b'\x0F':
+                        print("O server deu o sinal verde, posso enviar o próximo pacote\n")
+                    else:
+                        print("Ops... Ocorreu um erro com os pacotes. Muito triste...")
+                        nRxBytes, nRxNBytes = com1.getData(1)
+                        print("Recebeu")
+                        n = int.from_bytes(nRxNBytes, byteorder="big")
 
-
-
-
-
- 
+                else:
+                    print("Transmissão encerrada!")
+                
+                
         tempo_final = time.time()
         tempo_total = tempo_final - cronometro_client
         # velocidade = len(txBuffer)/tempo_total
@@ -169,7 +184,6 @@ def main():
 
         com1.disable()
     
-
     #Separando o número de pacotes
 
     # frac, whole = math.modf(len(payload_as_bytes)/sizePayload)
@@ -195,7 +209,6 @@ def main():
         print(erro)
         com1.disable()
         
-
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
     main()

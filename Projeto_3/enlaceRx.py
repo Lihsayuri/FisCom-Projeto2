@@ -68,10 +68,12 @@ class RX(object):
         return(b)
 
     def getNData(self, size):
+        cronometro = time.time()
         while(self.getBufferLen() < size):
             time.sleep(0.05)      
-            # print("loop infinito")
+            #print("loop infinito. GetBufferLen:{0}".format(self.getBufferLen()))
         return(self.getBuffer(size))
+
 
 
     def clearBuffer(self):
