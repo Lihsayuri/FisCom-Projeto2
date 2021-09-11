@@ -139,8 +139,12 @@ def main():
         print("------------------------------------------\n")
         print("Pacote será enviado em alguns segundos... \n")
         
+        deuErrado = False
+        n = 0
+        while n < (len(datagramas)):
+            print(n)
 
-        for n in range(len(datagramas)):
+            pacoteEnviar = datagramas[n]
 
             numeroBytesPack = (len(datagramas[n])).to_bytes(2, byteorder="big")
             com1.sendData(np.asarray(numeroBytesPack))
@@ -150,24 +154,23 @@ def main():
 
             rxBufferPackSize, rxnPackSize = com1.getData(2)
 
+
             if rxBufferPackSize == numeroBytesPack:
                 lenBytesPack = len(datagramas[n])
                 print("Vamos transmitir: {0} bytes".format(lenBytesPack))
 
-                print("Quero mandar esse pacote: {0}\n".format(datagramas[n]))
+                print("Quero mandar esse pacote: {0}\n".format(pacoteEnviar))
 
-                com1.sendData(np.asarray(datagramas[n]))
+                com1.sendData(np.asarray(pacoteEnviar))
 
                 if n != len(datagramas):
                     rxNextPack, rxnNextPack = com1.getData(1)
                     if rxNextPack == b'\x0F':
                         print("O server deu o sinal verde, posso enviar o próximo pacote\n")
+                        n+=1
                     else:
                         print("Ops... Ocorreu um erro com os pacotes. Muito triste...")
-                        nRxBytes, nRxNBytes = com1.getData(1)
-                        print("Recebeu ")
-                        n = int.from_bytes(nRxBytes, byteorder="big")
-
+                        print("Recebeu o pacote que é para reenviar {0}".format(rxNextPack))
                 else:
                     print("Transmissão encerrada!")
                 

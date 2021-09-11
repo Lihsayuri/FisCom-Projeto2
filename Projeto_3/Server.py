@@ -91,7 +91,7 @@ def main():
         print("         INICIANDO RECEBIMENTO DE PACOTES      ")
         print("------------------------------------------------\n")
 
-        # forcarErro = True
+        forcarErro = True
 
         while EnvioNaoCompleto:
             # time.sleep(2)
@@ -132,9 +132,9 @@ def main():
 
             sinal_verde = b'\x0F'
 
-            # if forcarErro:
-            #     nCurrentPack -=1
-            #     forcarErro = False
+            if forcarErro:
+                nCurrentPack -=1
+                forcarErro = False
 
             if nCurrentPack == (nOldPackage + 1) and EOP == b'\x00\x00\x00\x01':
                 print("Pacote recebido está certo! Vou enviar o sinal verde: {0}".format(sinal_verde))
