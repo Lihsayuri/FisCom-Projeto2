@@ -68,49 +68,17 @@ class RX(object):
         return(b)
 
     def getNData(self, size):
+        #print("ENTROU NO GETNDATA")
+        initialTime = time.time()
         while(self.getBufferLen() < size):
-            time.sleep(0.05)      
-            # print("loop infinito. GetBufferLen:{0}".format(self.getBufferLen()))
+            cronometro = time.time() - initialTime
+            time.sleep(0.05) 
+            #print(cronometro)     
+            if cronometro >= 5 :
+                print("Servidor inativo")
+                return (b'\xFF')
         return(self.getBuffer(size))
-
 
 
     def clearBuffer(self):
         self.buffer = b""
-
-
-
-# while TentarNovamente:
-#         print("Handshake pelo client sendo enviado em alguns segundos... \n")
-
-#         com1.sendData(np.asarray(handshake_message))
-
-#         time.sleep(0.1)
-#         print("Enviou: {0}".format(handshake_message))
-#         print("Aguardando a confirmação do Server")
-
-#         print("Número de bytes enviados:{0}".format(com1.tx.transLen))
-
-#         rxBufferHandshake, rxnHandshake = com1.getData(1)
-
-#         print("Recebeu o Handshake: {0}".format(rxBufferHandshake))
-
-#     if handshake_message == rxBufferHandshake:
-#         print("Handshake feito com sucesso!")
-#         print("O server recebeu o mesmo que foi enviado pelo client: {0}".format(rxBufferHandshake))
-#         com1.sendData(b'\x01')
-
-#         TentarNovamente = False
-#     else:
-#         print("Servidor inativo")
-#         resposta = input("Tentar novamente? S/N ")
-#         if resposta == "S":
-#             com1.sendData(b'S')
-#             TentarNovamente = True
-#         else: 
-#             TentarNovamente = False
-#             com1.sendData(b'N')
-#             print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
-
-
-# #------------------------------------------------------------------------------------

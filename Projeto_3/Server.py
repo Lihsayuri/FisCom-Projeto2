@@ -60,11 +60,10 @@ def main():
             print("Vamos estabelecer o Handshake com o Client")
 
             # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
+
             txBufferHandshake, tRxHandshake = com2.getData(1)  
             respostaServer = b'\x02'
-
-            txBufferHandshake = b'\xFF'
-
+            
             # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
 
             print("Agora servidor está enviando o Handshake de volta para o client")
@@ -75,10 +74,7 @@ def main():
                 com2.sendData(respostaServer)
                 print("Respondi o Handshake e posso começar a transmissão")
                 TentarNovamente = False
-            
-            # if txBufferHandshake == b'\xFF':
-            #     print("Deu tudo errado, vamos tentar novamente!")
-            #     TentarNovamente = True
+
 
         print("Pronto para receber os pacotes\n")
         # com2.getData(10)
@@ -94,11 +90,15 @@ def main():
         print("------------------------------------------------")
         print("         INICIANDO RECEBIMENTO DE PACOTES      ")
         print("------------------------------------------------\n")
+
+        # forcarErro = True
+
         while EnvioNaoCompleto:
+            # time.sleep(2)
+
             print("Vamos estabelecer o recebimento dos datagramas com o Client!")
 
             # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
-            time.sleep(2)
             txPackSize, tRxNPackSize= com2.getData(2)  
 
             rxBufferResposta = int.from_bytes(txPackSize, byteorder ="big")
@@ -122,8 +122,7 @@ def main():
 
             print("-------------------------\n")
             print("Pacote atual:{0}".format(CurrentPack))
-            #nCurrentPack = int.from_bytes(CurrentPack, byteorder="big")
-            nCurrentPack = 2
+            nCurrentPack = int.from_bytes(CurrentPack, byteorder="big")
             print("Pacote atual em int:{0}\n".format(nCurrentPack))
             TotalPacks = txPack[6:7]
             nTotalPacks = int.from_bytes(TotalPacks, byteorder="big")
@@ -133,20 +132,23 @@ def main():
 
             sinal_verde = b'\x0F'
 
+            # if forcarErro:
+            #     nCurrentPack -=1
+            #     forcarErro = False
+
             if nCurrentPack == (nOldPackage + 1) and EOP == b'\x00\x00\x00\x01':
                 print("Pacote recebido está certo! Vou enviar o sinal verde: {0}".format(sinal_verde))
                 dataReceived.append(txPack)
                 com2.sendData(sinal_verde)
                 nOldPackage+= 1
+                if nCurrentPack == nTotalPacks and EOP == b'\x00\x00\x00\x01':
+                    print("Recebi todos os pacotes!")
+                    EnvioNaoCompleto = False
 
-            if nCurrentPack == nTotalPacks and EOP == b'\x00\x00\x00\x01':
-                print("Recebi todos os pacotes!")
-                EnvioNaoCompleto = False
-
+            # elif nCurrentPack != (nOldPackage + 1) or EOP != b'\x00\x00\x00\x01':
             else:
                 print("Recebi o pacote errado!")
                 print("O Client vai ter que me enviar o mesmo pacote")
-                time.sleep(5)
                 print(CurrentPack)
                 com2.sendData(CurrentPack)
 

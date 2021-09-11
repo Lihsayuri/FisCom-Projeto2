@@ -41,5 +41,6 @@ class enlace(object):
 
         
     def getData(self, size):
+        #print("entrou no GETDATA")
         data = self.rx.getNData(size)
         return(data, len(data))

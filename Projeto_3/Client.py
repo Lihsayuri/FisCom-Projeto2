@@ -75,8 +75,6 @@ def main():
             print("Número de bytes enviados:{0}".format(com1.tx.transLen))
 
             rxBufferHandshake, rxnHandshake = com1.getData(1)
-
-            initialTime = time.time()
             
             print("Recebeu o Handshake: {0}\n".format(rxBufferHandshake))
 
@@ -86,8 +84,7 @@ def main():
                 print("Vamos iniciar a transmissao do pacote\n")
                 TentarNovamente = False
             # quando o server não responde, essa resposta é autogerada
-            if time.time() - initialTime == 5:
-                print("Servidor inativo")
+            elif rxBufferHandshake == b'\xFF':
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
                     TentarNovamente = True
@@ -141,6 +138,7 @@ def main():
         print("         INICIANDO ENVIO DE PACOTES      ")
         print("------------------------------------------\n")
         print("Pacote será enviado em alguns segundos... \n")
+        
 
         for n in range(len(datagramas)):
 
@@ -167,8 +165,8 @@ def main():
                     else:
                         print("Ops... Ocorreu um erro com os pacotes. Muito triste...")
                         nRxBytes, nRxNBytes = com1.getData(1)
-                        print("Recebeu")
-                        n = int.from_bytes(nRxNBytes, byteorder="big")
+                        print("Recebeu ")
+                        n = int.from_bytes(nRxBytes, byteorder="big")
 
                 else:
                     print("Transmissão encerrada!")
