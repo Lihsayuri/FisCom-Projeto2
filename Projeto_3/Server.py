@@ -92,7 +92,9 @@ def main():
         print("         INICIANDO RECEBIMENTO DE PACOTES      ")
         print("------------------------------------------------\n")
 
-        forcarErro = True
+        forcarErro = False
+        forcarErroNbytes = True
+
 
         while EnvioNaoCompleto:
             # time.sleep(2)
@@ -117,6 +119,11 @@ def main():
             print("-----------------------------------\n")
             print("Pacote recebido:{0}\n".format(txPack))
 
+            if forcarErroNbytes:
+                BytesErrados = txPack[0:10] + b'\x00\x01\x02\x00\x00\x00\x02' + txPack[11:rxBufferResposta]
+                txPack = BytesErrados
+                print("BYTES ERRADOS:{0}".format(BytesErrados))
+
             EOP = txPack[(rxBufferResposta-4):rxBufferResposta]
             print("Esse é o EOP:{0}\n".format(EOP))
             CurrentPack = txPack[4:5]
@@ -135,7 +142,7 @@ def main():
 
             if forcarErro:
                 nCurrentPack -=1
-                forcarErro = False
+                # forcarErro = False
 
             if nCurrentPack == (nOldPackage + 1) and EOP == b'\x00\x00\x00\x01':
                 print("Pacote recebido está certo! Vou enviar o sinal verde: {0}".format(sinal_verde))
@@ -148,11 +155,21 @@ def main():
 
             # elif nCurrentPack != (nOldPackage + 1) or EOP != b'\x00\x00\x00\x01':
             else:
-                print("Recebi o pacote errado!")
-                print("O Client vai ter que me enviar o mesmo pacote")
-                CurrentPackDatagrama = b'HEAD\x01/\x01\x00\x00\x00' + CurrentPack + EOP
-                print(CurrentPackDatagrama)
-                com2.sendData(CurrentPackDatagrama)
+                if forcarErro:
+                    print("Recebi o pacote errado!")
+                    print("O Client vai ter que me enviar o mesmo pacote")
+                    forcarErro = False
+                    CurrentPackDatagrama = b'HEAD\x01/\x01\x00\x00\x00' + CurrentPack + EOP
+                    print(CurrentPackDatagrama)
+                    com2.sendData(CurrentPackDatagrama)
+                elif forcarErroNbytes:
+                    print("Recebi o número de bytes errado! O EOP está fora de ordem")
+                    print("O client vai ter que me reenviar o pacote")
+                    forcarErroNbytes = False
+                    CurrentPackDatagrama = b'HEAD\x01/\x01\x00\x00\x00' + CurrentPack + b'\x00\x00\x00\x01'
+                    print(CurrentPackDatagrama)
+                    com2.sendData(CurrentPackDatagrama)
+
 
             # o server deve enviar uma mensagem para o cliente solicitando o reenvio do pacote, seja por
             # não ter o payload esperado, ou por não ser o pacote correto
