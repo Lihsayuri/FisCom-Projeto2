@@ -83,7 +83,7 @@ def main():
                 print("Vamos iniciar a transmissao do pacote\n")
                 TentarNovamente = False
             # quando o server não responde, essa resposta é autogerada
-            elif rxBufferHandshake[10:11] == b'\xFF':
+            elif rxBufferHandshake == b'\xFF':
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
                     TentarNovamente = True

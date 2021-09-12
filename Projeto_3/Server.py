@@ -188,7 +188,7 @@ def main():
 
         # encoding = 'utf-8'
         # Criou o arquivoooooooo YAAAAAAAAAY
-        with open('receivedFile.txt','wb') as f:
+        with open('receivedFile3.txt','wb') as f:
             f.write(organizedData)
 
 
