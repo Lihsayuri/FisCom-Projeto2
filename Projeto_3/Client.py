@@ -46,9 +46,8 @@ def main():
         # Contabilizando o tempo inicial
         cronometro_client = time.time()
 
-        # my_str = "helloworld"
-        # my_str_as_bytes = str.encode(my_str)
-        handshake_message = b'\x01'
+        EOP = b'\x00\x00\x00\x01'
+        handshake_message = b'HEAD\x01/\x01\x00\x00\x00' + b'\x01' + EOP 
 
         print("Primeira mensagem em bytes que será enviada para o server: {0}".format(handshake_message))
         print(len(handshake_message))
@@ -74,17 +73,17 @@ def main():
 
             print("Número de bytes enviados:{0}".format(com1.tx.transLen))
 
-            rxBufferHandshake, rxnHandshake = com1.getData(1)
+            rxBufferHandshake, rxnHandshake = com1.getData(15)
             
             print("Recebeu o Handshake: {0}\n".format(rxBufferHandshake))
 
-            if rxBufferHandshake == b'\x02':
+            if rxBufferHandshake[10:11] == b'\x02':
                 print("Handshake feito com sucesso!")
                 print("O server recebeu o byte: {0}".format(rxBufferHandshake))
                 print("Vamos iniciar a transmissao do pacote\n")
                 TentarNovamente = False
             # quando o server não responde, essa resposta é autogerada
-            elif rxBufferHandshake == b'\xFF':
+            elif rxBufferHandshake[10:11] == b'\xFF':
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
                     TentarNovamente = True
@@ -97,8 +96,8 @@ def main():
 
         # DATAGRAMA
 
-        Head = b'HEAD/Sayti'
-        print(Head) 
+        # Head = b'HEAD/Sayti'
+        # print(Head) 
         EOP = b'\x00\x00\x00\x01'
         print(EOP)
 
@@ -164,8 +163,8 @@ def main():
                 com1.sendData(np.asarray(pacoteEnviar))
 
                 if n != len(datagramas):
-                    rxNextPack, rxnNextPack = com1.getData(1)
-                    if rxNextPack == b'\x0F':
+                    rxNextPack, rxnNextPack = com1.getData(15)
+                    if rxNextPack[10:11] == b'\x0F':
                         print("O server deu o sinal verde, posso enviar o próximo pacote\n")
                         n+=1
                     else:

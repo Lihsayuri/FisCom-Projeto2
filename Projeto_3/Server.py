@@ -61,15 +61,16 @@ def main():
 
             # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
 
-            txBufferHandshake, tRxHandshake = com2.getData(1)  
-            respostaServer = b'\x02'
+            txBufferHandshake, tRxHandshake = com2.getData(15)  
+            EOP = b'\x00\x00\x00\x01'
+            respostaServer = b'HEAD\x01/\x01\x00\x00\x00' + b'\x02' + EOP
             
             # de bytes transformando para decimal de novo, que é como iremos usar no resto da comunicação
 
             print("Agora servidor está enviando o Handshake de volta para o client")
 
 
-            if txBufferHandshake == b'\x01':
+            if txBufferHandshake[10:11] == b'\x01':
                 time.sleep(1)
                 com2.sendData(respostaServer)
                 print("Respondi o Handshake e posso começar a transmissão")
@@ -130,7 +131,7 @@ def main():
 
             print("Número total de pacotes :{0}\n".format(nTotalPacks))
 
-            sinal_verde = b'\x0F'
+            sinal_verde = b'HEAD\x01/\x01\x00\x00\x00' + b'\x0F'+ EOP
 
             if forcarErro:
                 nCurrentPack -=1
@@ -149,8 +150,9 @@ def main():
             else:
                 print("Recebi o pacote errado!")
                 print("O Client vai ter que me enviar o mesmo pacote")
-                print(CurrentPack)
-                com2.sendData(CurrentPack)
+                CurrentPackDatagrama = b'HEAD\x01/\x01\x00\x00\x00' + CurrentPack + EOP
+                print(CurrentPackDatagrama)
+                com2.sendData(CurrentPackDatagrama)
 
             # o server deve enviar uma mensagem para o cliente solicitando o reenvio do pacote, seja por
             # não ter o payload esperado, ou por não ser o pacote correto
