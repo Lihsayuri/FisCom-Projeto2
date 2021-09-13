@@ -4,4 +4,6 @@ Projetos da disciplina de Camada Dísica da Computação realizados por Lívia S
 
 Até agora:
 * Projeto Loopback [OK]
-* Projeto Client-Server 
+* Projeto Client-Server [OK]
+* Projeto Datagrama [OK]
+* Projeto Protocolo ponto a ponto
