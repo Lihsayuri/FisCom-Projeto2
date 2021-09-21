@@ -40,8 +40,11 @@ class Client:
 
         self.archiveId = b'\x0a'
 
-        self.errorBit = b'\xff'
-        self.notErrorBit = b'\x00'
+        self.idSensor = b'\x02'
+        self.idServer = b'\xf0'
+
+        self.timer2Reset = False
+
 
     def head(self, messageType, idSensor, idServer, nTotalPack, nCurrentPack, handshakeOrData, reSend, lastSucessPack):
         h0 = messageType
@@ -61,13 +64,29 @@ class Client:
         hoursNow = datetime.now()
         dateNHours = hoursNow.strftime('%d/%m/%Y %H:%M:%S')
 
-        print("Data e hora: {0}".format(dateNHours))
+        return dateNHours
+    
+    # •Instante do envio ou recebimento
+    # • Envio ou recebimento
+    # • Tipo de mensagem (de acordo com o protocolo)
+    # • Tamanho de bytes total
+    # •Pacote enviado (caso tipo 3)
+    # • Total de pacotes (caso tipo 3 )
+    # • CRC do payload para mensagem tipo 3 (caso tenha implementado)
+
+    #29/09/2020 13:34:23.089 / envio / 3 / 128 / 1 / 23/ F23F
+
+    def clientLog(self,action,type,size,sentPckg,totalPckg):
+        char = " / "
+        if type == 3:
+            log = str(self.getDataClient())+ char + action + char + "3" + char + str(size) + char + str(sentPckg) + char + str(totalPckg) # + CRC
+        else:
+            log = str(self.getDataClient())+ char + action + char + str(type) + char + str(size) # + CRC
+
+        return log
     
     def datagramaHandshake(self):
-        idSensor = b'\x02'
-        idServer = b'\xf0'
-
-        Head = self.head(self.messageType1, idSensor, idServer, self.byteVazio, self.byteVazio, self.archiveId, self.byteVazio, self.byteVazio)
+        Head = self.head(self.messageType1, self.idSensor, self.idServer, self.byteVazio, self.byteVazio, self.archiveId, self.byteVazio, self.byteVazio)
         handshakeMessage = Head + self.EOP
 
         return handshakeMessage
@@ -83,13 +102,16 @@ class Client:
             print("Handshake pelo client sendo enviado em alguns segundos... \n")
 
             self.com1.sendData(handshake)
+            self.ClientLog.append(self.clientLog("envio", int.from_bytes(self.messageType1, byteorder="big"), len(handshake), "", ""))
 
             print("Enviou: {0}".format(handshake))
             print("Aguardando a confirmação do Server\n")
 
             print("Número de bytes enviados:{0}".format(self.com1.tx.transLen))
 
-            rxBufferHandshake, rxnHandshake = self.com1.getData(14)
+            rxBufferHandshake, rxnHandshake, self.timer2Reset = self.com1.getData(14)
+            self.ClientLog.append(self.clientLog("receb", int.from_bytes(rxBufferHandshake[0:1], byteorder="big"), len(rxBufferHandshake), "", ""))
+
             
             print("Recebeu o Handshake: {0}\n".format(rxBufferHandshake))
 
@@ -124,26 +146,21 @@ class Client:
 
 
     def sendPackages(self, packageList):
-        oldPackage = 0
-        deuErrado = False
-        idSensor = b'\x02'
-        idServer = b'\xf0'
-
         n = 0
-
         lenPacks_bin = len(packageList).to_bytes(1, byteorder="big")
-
 
         print("------------------------------------------")
         print("         INICIANDO ENVIO DE PACOTES      ")
         print("------------------------------------------\n")
         print("Pacote será enviado em alguns segundos... \n")
 
-
-
         while n < (len(packageList)):
             print(n)
             pacotePayload = packageList[n]
+
+            # quanfo for False ele será resetado, porque significa que tudo ocorreu em menos de 5 segundos
+            if not self.timer2Reset:
+                timer2 = time.time()
 
             
             currentPacks = int(n+1).to_bytes(1, byteorder="big")
@@ -155,11 +172,7 @@ class Client:
 
             print("ESSE É O TAMANHO PACOTE EM BYTES:{0}".format(datah5_payloadSize))
 
-
-            Head = self.head(self.messageType3, idSensor, idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, n.to_bytes(1, byteorder='big'))
-
-            self.com1.sendData(Head)
-
+            Head = self.head(self.messageType3, self.idSensor, self.idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, n.to_bytes(1, byteorder='big'))
 
             pacote = Head + packageList[n] + self.EOP
             # datagramas.append(pacote)
@@ -169,12 +182,24 @@ class Client:
             print("Quero mandar esse pacote: {0}\n".format(pacote))
 
             self.com1.sendData(np.asarray(pacote))
+            self.ClientLog.append(self.clientLog("envio", int.from_bytes(self.messageType3, byteorder="big"), len(pacote), int.from_bytes(pacote[4:5], byteorder="big"), int.from_bytes(pacote[3:4], byteorder="big")))
 
             if n != (len(packageList)-1):
                 print("Entrei")
-                rxNextPack, rxnNextPack = self.com1.getData(14)
+                rxNextPack, rxnNextPack, self.timer2Reset  = self.com1.getData(14)
+                self.ClientLog.append(self.clientLog("receb", int.from_bytes(rxNextPack[0:1], byteorder="big"), len(rxNextPack), "", ""))
                 print("Recebi: {0}".format(rxNextPack))
-                if rxNextPack[0:1] == b'\x04' and rxNextPack[7] == int(n+1):
+
+
+                cronometroTimer2 = time.time() - timer2
+                if cronometroTimer2 >=20:
+                    timeout = self.head(self.messageType5ype, self.idSensor, self.idServer, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio)+ self.EOP
+                    self.com1.sendData(timeout)
+                    self.ClientLog.append(self.clientLog("envio", int.from_bytes(timeout[0:1], byteorder="big"), len(timeout), "", ""))
+                    time.sleep(0.01)
+                    self.com1.disable()
+                    break
+                elif rxNextPack[0:1] == b'\x04' and rxNextPack[7] == int(n+1):
                     print("O server deu o sinal verde, posso enviar o próximo pacote\n")
                     n+=1
                 else:
@@ -182,5 +207,6 @@ class Client:
                     print("Recebeu o pacote que é para reenviar {0}".format(rxNextPack))
             else:
                 print("Transmissão encerrada!")
+                print(self.ClientLog)
                 self.com1.disable()
                 return

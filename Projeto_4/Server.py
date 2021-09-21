@@ -18,7 +18,7 @@ import time
 import numpy as np
 from PIL import Image
 import io
-from enlaceRx import * 
+from enlaceRxServer import * 
 # from Client import *
 
 # txLen = ""
@@ -46,7 +46,6 @@ def main():
 
         print(organizedData)
 
-
         # tempo_final = time.time()
         # tempo_total = tempo_final - tempo_inicial
         # # velocidade = lenRx/ tempo_total
@@ -61,8 +60,7 @@ def main():
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
-        server.com2.disable()
-        
+        server.com2.disable()    
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
