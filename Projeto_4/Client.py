@@ -48,6 +48,8 @@ def main():
 
         client.sendPackages(listPackage)
 
+        clientLog = client.logToFileClient()
+
         # tempo_final = time.time()
         # tempo_total = tempo_final - cronometro_client
         # # velocidade = len(txBuffer)/tempo_total

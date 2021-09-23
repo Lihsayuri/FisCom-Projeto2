@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 import io
 import math
+import os
 
 #----------------------------------------------------------------------------------------
 
@@ -193,7 +194,7 @@ class Client:
 
                 cronometroTimer2 = time.time() - timer2
                 if cronometroTimer2 >=20:
-                    timeout = self.head(self.messageType5ype, self.idSensor, self.idServer, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio)+ self.EOP
+                    timeout = self.head(self.messageType5, self.idSensor, self.idServer, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio)+ self.EOP
                     self.com1.sendData(timeout)
                     self.ClientLog.append(self.clientLog("envio", int.from_bytes(timeout[0:1], byteorder="big"), len(timeout), "", ""))
                     time.sleep(0.01)
@@ -210,3 +211,14 @@ class Client:
                 print(self.ClientLog)
                 self.com1.disable()
                 return
+
+    def logToFileClient(self):
+        if os.path.exists('clientFile.txt'):
+            os.remove('clientFile.txt')
+
+        with open('clientFile.txt','w') as s:
+            for i in range(len(self.ClientLog)):
+                s.write("\n")
+                s.write(self.ClientLog[i])
+                s.write("\n")
+

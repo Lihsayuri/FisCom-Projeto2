@@ -18,6 +18,7 @@ import time
 import numpy as np
 from PIL import Image
 import io
+import traceback
 from enlaceRxServer import * 
 # from Client import *
 
@@ -46,6 +47,8 @@ def main():
 
         print(organizedData)
 
+        serverLog = server.logToFileServer()
+
         # tempo_final = time.time()
         # tempo_total = tempo_final - tempo_inicial
         # # velocidade = lenRx/ tempo_total
@@ -59,6 +62,7 @@ def main():
     
     except Exception as erro:
         print("ops! :-\\")
+        print(traceback.format_exc())
         print(erro)
         server.com2.disable()    
 

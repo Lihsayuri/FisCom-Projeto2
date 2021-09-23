@@ -9,11 +9,14 @@ from numpy.core.fromnumeric import size
 # from enlaceClient import *
 # from enlaceRxCLient import *
 from enlaceRxServer import *
+from enlaceServer import *
 import time
 import numpy as np
 from PIL import Image
 import io
 import math
+import os
+import traceback
 
 #----------------------------------------------------------------------------------------
 
@@ -25,7 +28,7 @@ class Server:
 
         self.com2.fisica.flush()            
 
-        print("Comunicação aberta com sucesso!")
+        print("Comunicação aberta com sucesso!\n")
 
         self.tamanhoHead = 10
         self.tamanhoPayload = 114
@@ -34,6 +37,8 @@ class Server:
         self.EOP = b'\xff\xaa\xff\xaa'
 
         self.ServerLog = []
+
+        self.timer2Reset = False
 
         self.messageType2 = b'\x02'  #server recebeu mensagem do tipo 1 com identificador correto
         self.messageType4 = b'\x04' # servidor dizendo recebeu pacote corretamente, tudo perfeito
@@ -46,6 +51,10 @@ class Server:
         self.idSensor = b'\x02'
         self.idServer = b'\x0f'
         self.idClient = b'\x03'
+
+        self.EnvioNaoCompleto = True
+        self.forcarErroNPacks = True
+        self.forcarErroNbytes = False
 
 
     def head(self, messageType, idSensor, idServer, nTotalPack, nCurrentPack, handshakeOrData, reSend, lastSuccessPack):
@@ -88,9 +97,8 @@ class Server:
 
             # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
 
-            txBufferHandshake, tRxHandshake = self.com2.getData(14)  
+            txBufferHandshake, tRxHandshake, self.timer2Reset= self.com2.getData(14)  
             self.ServerLog.append(self.serverLog("receb", int.from_bytes(txBufferHandshake[0:1], byteorder="big"), len(txBufferHandshake), "", ""))
-
 
             print("Recebi do Client e agora vou mandar pro Server:{0}".format(txBufferHandshake))
 
@@ -111,22 +119,19 @@ class Server:
                 print("Pronto para receber os pacotes\n")
 
     def conferindoMensagem(self):
-        
-        EnvioNaoCompleto = True
-        forcarErroNPacks = False
-        forcarErroNbytes = True
-
         dataReceived = []
         
         nOldPackage = 0
 
-
-        while EnvioNaoCompleto:
+        while self.EnvioNaoCompleto:
             # time.sleep(2)
 
-            print("Vamos estabelecer o recebimento dos datagramas com o Client!")
+            if not self.timer2Reset:
+                timer2 = time.time()
 
-            txBufferHead, tRxNHead = self.com2.getData(10)
+            print("Vamos estabelecer o recebimento dos datagramas com o Client!\n")
+
+            txBufferHead, tRxNHead, self.timer2Reset = self.com2.getData(10)
 
             qtdPayloadPacote = txBufferHead[5:6]
             print("O pacote tem o payload de {0}".format(qtdPayloadPacote))
@@ -136,8 +141,23 @@ class Server:
 
             print("O primeiro pacote (próximo a ser recebido) TEM TOTAL DE BYTES: {0}".format(qtdBytesPack))
 
-            txPayloadPack, txnPayloadPack = self.com2.getData(qtdBytesPack)
+            txPayloadPack, txnPayloadPack, self.timer2Reset = self.com2.getData(qtdBytesPack)
+
             txPack = txBufferHead + txPayloadPack
+            qtdBytesTotal = qtdBytesPack+10
+
+            cronometroTimer2 = time.time() - timer2
+            if cronometroTimer2 >=20:
+                # if int.from_bytes(txPack[4:5], byteorder="big") == 1:
+                #     self.com2.sendData
+                print("DEU TIMEOUT DE 20s\n")
+                timeout = self.head(self.messageType5, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio)+ self.EOP
+                self.com2.sendData(timeout)
+                self.ServerLog.append(self.serverLog("envio", int.from_bytes(timeout[0:1], byteorder="big"), len(timeout), "", ""))
+                time.sleep(0.01)
+                self.com2.disable()
+                break
+
 
             self.ServerLog.append(self.serverLog("receb", int.from_bytes(txPack[0:1], byteorder="big"), len(txPack), int.from_bytes(txPack[4:5], byteorder="big"), int.from_bytes(txPack[3:4], byteorder="big") ))
 
@@ -148,14 +168,14 @@ class Server:
 
             print("Pacote recebido:{0}\n".format(txPack))
 
-            if forcarErroNbytes:
-                BytesErrados = txPack[0:10] + b'\x00\x01\x02\x00\x00\x00\x02' + txPack[11:qtdBytesPack]
+            if self.forcarErroNbytes:
+                BytesErrados = txPack[0:10] + b'\x00\x01\x02\x00\x00\x00\x02' + txPack[11:qtdBytesTotal]
                 txPack = BytesErrados
                 print("BYTES ERRADOS:{0}".format(BytesErrados))
 
             # lembrando, h5 fala o número de bytes no payload por pacote
 
-            EOP_confere = txPack[(qtdBytesPack-4): qtdBytesPack]
+            EOP_confere = txPack[(qtdBytesTotal-4): qtdBytesTotal]
 
             print("Esse é o EOP do pacote:{0}\n".format(EOP_confere))
             
@@ -176,7 +196,7 @@ class Server:
 
             # sinal_verde = b'HEAD\x01/\x01\x00\x00\x00' + b'\x0F'+ EOP
 
-            if forcarErroNPacks:
+            if self.forcarErroNPacks:
                 nCurrentPack -=1
 
             if nCurrentPack == (nOldPackage + 1) and EOP_confere == self.EOP:
@@ -185,7 +205,7 @@ class Server:
                 if nCurrentPack == nTotalPacks:
                     dataReceived.append(txPack)
                     print("Recebi todos os pacotes!")
-                    EnvioNaoCompleto = False
+                    self.EnvioNaoCompleto = False
                     self.com2.disable()
                 else:
                     sinal_verde = self.head(self.messageType4, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, self.byteVazio, CurrentPack) + self.EOP
@@ -199,10 +219,10 @@ class Server:
 
             # elif nCurrentPack != (nOldPackage + 1) or EOP != b'\x00\x00\x00\x01':
             else:
-                if forcarErroNPacks:
+                if self.forcarErroNPacks:
                     print("Recebi o pacote errado!")
                     print("O Client vai ter que me enviar o mesmo pacote")
-                    forcarErro = False
+                    self.forcarErroNPacks = False
                     if nCurrentPack == 0:
                         lastPackSucessfully = self.byteVazio
                     else:
@@ -212,10 +232,10 @@ class Server:
                     self.com2.sendData(CurrentPackDatagrama)
                     self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", ""))
 
-                elif forcarErroNbytes:
+                elif self.forcarErroNbytes:
                     print("Recebi o número de bytes errado! O EOP está fora de ordem")
                     print("O client vai ter que me reenviar o pacote")
-                    forcarErroNbytes = False
+                    self.forcarErroNbytes = False
                     if nCurrentPack == 0:
                         lastPackSucessfully = self.byteVazio
                     else:
@@ -247,7 +267,13 @@ class Server:
 
         return organizedData
 
+    def logToFileServer(self):
+        if os.path.exists('serverFile.txt'):
+            os.remove('serverFile.txt')
 
-
-
+        with open('serverFile.txt','w') as s:
+            for i in range(len(self.ServerLog)):
+                s.write("\n")
+                s.write(self.ServerLog[i])
+                s.write("\n")
 

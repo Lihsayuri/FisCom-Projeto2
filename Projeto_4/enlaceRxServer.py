@@ -68,16 +68,14 @@ class RX(object):
         return(b)
 
     def getNData(self, size):
-        #print("ENTROU NO GETNDATA")
-        initialTime = time.time()
+        initialTime1 = time.time()
         while(self.getBufferLen() < size):
-            cronometro = time.time() - initialTime
+            cronometro = time.time() - initialTime1
             time.sleep(0.05) 
-            #print(cronometro)     
-            if cronometro >= 5 :
-                print("Servidor inativo")
-                return (b'\xFF')
-        return(self.getBuffer(size))
+            if cronometro >= 2 :
+                print("Client está inativo. Timeout 1: passou de 2 segundos")
+                return (b'\xFF'), True
+        return(self.getBuffer(size), False)
 
 
     def clearBuffer(self):
