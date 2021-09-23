@@ -42,24 +42,23 @@ def main():
 
         handshakeMessage = client.datagramaHandshake()
 
-        client.sendHandshake(handshakeMessage)
+        Handshakedeucerto = client.sendHandshake(handshakeMessage)
 
-        listPackage = client.payload("./payload.txt")
-
-        client.sendPackages(listPackage)
-
-        clientLog = client.logToFileClient()
+        if Handshakedeucerto:
+            listPackage = client.payload("./payload.txt")
+            client.sendPackages(listPackage)
+ 
+        client.logToFileClient()
 
         # tempo_final = time.time()
         # tempo_total = tempo_final - cronometro_client
         # # velocidade = len(txBuffer)/tempo_total
 
-        print("-------------------------")
+        print("\n-------------------------")
         print("Comunicação encerrada")
-        print("-------------------------")
+        print("-------------------------\n")
 
         client.com1.disable()
-
 
     except Exception as erro:
         print("ops! :-\\")

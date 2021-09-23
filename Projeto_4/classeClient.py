@@ -46,6 +46,9 @@ class Client:
 
         self.timer2Reset = False
 
+        self.forcarErroNPacks = False
+
+        self.forcarErroNbytes = False
 
     def head(self, messageType, idSensor, idServer, nTotalPack, nCurrentPack, handshakeOrData, reSend, lastSucessPack):
         h0 = messageType
@@ -95,12 +98,16 @@ class Client:
     def sendHandshake(self,handshake):
         # 29/09/2020 13:34:23.089 / envio / 3 / 128 / 1 / 23/ F23F
         TentarNovamente = True
+        HandshakeDeuCerto = False
 
         while TentarNovamente:
             print("-------------------------")
             print("         HANDSHAKE        ")
             print("-------------------------\n")
             print("Handshake pelo client sendo enviado em alguns segundos... \n")
+
+            if not self.timer2Reset:
+                timer2 = time.time()
 
             self.com1.sendData(handshake)
             self.ClientLog.append(self.clientLog("envio", int.from_bytes(self.messageType1, byteorder="big"), len(handshake), "", ""))
@@ -120,9 +127,11 @@ class Client:
                 print("Handshake feito com sucesso!")
                 print("O server recebeu o byte: {0}".format(rxBufferHandshake))
                 print("Vamos iniciar a transmissao do pacote\n")
+                HandshakeDeuCerto = True
                 TentarNovamente = False
+
             # quando o server não responde, essa resposta é autogerada
-            elif rxBufferHandshake == b'\xFF':
+            else:
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
                     TentarNovamente = True
@@ -130,6 +139,7 @@ class Client:
                     TentarNovamente = False
                     print("Ocorreu um erro e você não quis tentar novamente. Tente novamente depois então :/")
                     self.com1.disable()
+        return HandshakeDeuCerto
 
     def payload(self,filePath):
         filepath = filePath
@@ -163,19 +173,32 @@ class Client:
             if not self.timer2Reset:
                 timer2 = time.time()
 
-            
-            currentPacks = int(n+1).to_bytes(1, byteorder="big")
-            print("ESSE É O CURRENTPACK: {0}".format(currentPacks))
+            if self.forcarErroNPacks:
+                currentPacks = int(n+2).to_bytes(1, byteorder="big")
+                self.forcarErroNPacks = False
+            else:
+                currentPacks = int(n+1).to_bytes(1, byteorder="big")
 
+            # print("ESSE É O CURRENTPACK: {0}".format(currentPacks))
+
+            lastSucessPack = n.to_bytes(1, byteorder='big')
             #Enviando o tamanho do payload do próximo pacote
-            print("ESSE É O TAMANHO DO PACOTE UAI:{0}".format(len(packageList[n])))
-            datah5_payloadSize = (len(packageList[n])).to_bytes(1, byteorder="big") 
 
-            print("ESSE É O TAMANHO PACOTE EM BYTES:{0}".format(datah5_payloadSize))
-
-            Head = self.head(self.messageType3, self.idSensor, self.idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, n.to_bytes(1, byteorder='big'))
-
-            pacote = Head + packageList[n] + self.EOP
+            if self.forcarErroNbytes:
+                pacote_atual = packageList[n]
+                BytesErrados =  pacote_atual[0:10] + self.EOP + pacote_atual[10:len(packageList[n])]
+                payload_eop= BytesErrados
+                datah5_payloadSize = (len(packageList[n])).to_bytes(1, byteorder="big") 
+                Head = self.head(self.messageType3, self.idSensor, self.idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, lastSucessPack)
+                pacote = Head + payload_eop
+                print("BYTES ERRADOS:{0}".format(pacote))
+                self.forcarErroNbytes = False
+            else:
+                print("ESSE É O TAMANHO DO PACOTE UAI:{0}".format(len(packageList[n])))
+                datah5_payloadSize = (len(packageList[n])).to_bytes(1, byteorder="big") 
+                print("ESSE É O TAMANHO PACOTE EM BYTES:{0}".format(datah5_payloadSize))
+                Head = self.head(self.messageType3, self.idSensor, self.idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, lastSucessPack)
+                pacote = Head + packageList[n] + self.EOP
             # datagramas.append(pacote)
             
             print("Vamos transmitir: {0} bytes".format(len(pacote)))

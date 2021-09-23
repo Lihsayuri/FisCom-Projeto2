@@ -76,7 +76,7 @@ class RX(object):
             #print(cronometro)     
             if timer1 >= 5 :
                 print("Servidor inativo: timeout de 5 segundos!")
-                return (b'\xFF'), True
+                return b'', True
         return(self.getBuffer(size), False)
 
 

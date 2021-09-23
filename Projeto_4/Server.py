@@ -39,13 +39,12 @@ def main():
         
         server = Server()
 
-        server.conferindoHandshake()
+        Handshakedeucerto = server.conferindoHandshake()
 
-        receivedData = server.conferindoMensagem()
-
-        organizedData = server.organizeData(receivedData)
-
-        print(organizedData)
+        if Handshakedeucerto:
+            receivedData = server.conferindoMensagem()
+            organizedData = server.organizeData(receivedData)
+            print(organizedData)
 
         serverLog = server.logToFileServer()
 
@@ -54,9 +53,9 @@ def main():
         # # velocidade = lenRx/ tempo_total
 
         # Encerra comunicação
-        print("-------------------------")
+        print("\n-------------------------")
         print("Comunicação encerrada")
-        print("-------------------------")
+        print("-------------------------\n")
         # print("Velocidade: {0}".format(velocidade))
         server.com2.disable()
     

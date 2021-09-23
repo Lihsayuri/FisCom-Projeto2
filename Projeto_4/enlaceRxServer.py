@@ -74,7 +74,7 @@ class RX(object):
             time.sleep(0.05) 
             if cronometro >= 2 :
                 print("Client está inativo. Timeout 1: passou de 2 segundos")
-                return (b'\xFF'), True
+                return b'', True
         return(self.getBuffer(size), False)
 
 
