@@ -56,6 +56,8 @@ class Server:
         self.EnvioNaoCompleto = True
 
 
+
+
     def head(self, messageType, idSensor, idServer, nTotalPack, nCurrentPack, handshakeOrData, reSend, lastSuccessPack):
         h0 = messageType
         h1 = idSensor
@@ -136,10 +138,14 @@ class Server:
         while self.EnvioNaoCompleto:
             # time.sleep(2)
 
+
             if not self.timer2Reset:
                 timer2 = time.time()
 
+
             print("Vamos estabelecer o recebimento dos datagramas com o Client!\n")
+
+            self.com2.fisica.flush()
 
             txBufferHead, tRxNHead, self.timer2Reset = self.com2.getData(10)
 
@@ -153,12 +159,17 @@ class Server:
 
             txPayloadPack, txnPayloadPack, self.timer2Reset = self.com2.getData(qtdBytesPack)
 
-            print(txPayloadPack)
-
             txPack = txBufferHead + txPayloadPack
             qtdBytesTotal = qtdBytesPack+10
 
+            if self.timer2Reset:
+                self.com2.rx.getAllBuffer()
+                time.sleep(0.05)
+
+            print(txPayloadPack)
+
             cronometroTimer2 = time.time() - timer2
+
             if cronometroTimer2 >=20:
                 # if int.from_bytes(txPack[4:5], byteorder="big") == 1:
                 #     self.com2.sendData
@@ -242,7 +253,7 @@ class Server:
                     self.com2.sendData(CurrentPackDatagrama)
                     self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", ""))
 
-                elif nCurrentPack == (nOldPackage+1) and EOP_confere!= self.EOP:
+                elif EOP_confere!= self.EOP:
                     print("Recebi o número de bytes errado! O EOP está fora de ordem")
                     print("O client vai ter que me reenviar o pacote\n")
                     self.forcarErroNbytes = False

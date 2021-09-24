@@ -173,6 +173,7 @@ class Client:
             if not self.timer2Reset:
                 timer2 = time.time()
 
+
             if self.forcarErroNPacks:
                 currentPacks = int(n+2).to_bytes(1, byteorder="big")
                 self.forcarErroNPacks = False
@@ -205,6 +206,8 @@ class Client:
 
             print("Quero mandar esse pacote: {0}\n".format(pacote))
 
+
+
             self.com1.sendData(np.asarray(pacote))
             self.ClientLog.append(self.clientLog("envio", int.from_bytes(self.messageType3, byteorder="big"), len(pacote), int.from_bytes(pacote[4:5], byteorder="big"), int.from_bytes(pacote[3:4], byteorder="big")))
 
@@ -228,6 +231,7 @@ class Client:
                     n+=1
                 else:
                     print("Ops... Ocorreu um erro com os pacotes. Muito triste...")
+                    self.com1.tx.fisica.flush()
                     print("Recebeu o pacote que é para reenviar {0}".format(rxNextPack))
             else:
                 print("Transmissão encerrada!")
