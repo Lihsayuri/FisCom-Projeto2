@@ -70,15 +70,6 @@ class Client:
 
         return dateNHours
     
-    # •Instante do envio ou recebimento
-    # • Envio ou recebimento
-    # • Tipo de mensagem (de acordo com o protocolo)
-    # • Tamanho de bytes total
-    # •Pacote enviado (caso tipo 3)
-    # • Total de pacotes (caso tipo 3 )
-    # • CRC do payload para mensagem tipo 3 (caso tenha implementado)
-
-    #29/09/2020 13:34:23.089 / envio / 3 / 128 / 1 / 23/ F23F
 
     def clientLog(self,action,type,size,sentPckg,totalPckg):
         char = " / "
