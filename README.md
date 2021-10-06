@@ -1,6 +1,6 @@
 # FisCom-Projeto2
 
-Projetos da disciplina de Camada Dísica da Computação realizados por Lívia Sayuri Makuta e Henrique Martinelli Frezzatti.
+Projetos da disciplina de Camada Física da Computação realizados por Lívia Sayuri Makuta e Henrique Martinelli Frezzatti.
 
 Até agora:
 * Projeto Loopback [OK]
