@@ -6,4 +6,5 @@ Até agora:
 * Projeto Loopback [OK]
 * Projeto Client-Server [OK]
 * Projeto Datagrama [OK]
-* Projeto Protocolo ponto a ponto
+* Projeto Protocolo ponto a ponto (sem CRC: Projeto 4) [OK]
+* Projeto Protocolo ponto a ponto (com CRC: Projeto 5) [OK]
