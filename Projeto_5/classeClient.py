@@ -72,15 +72,6 @@ class Client:
 
         return dateNHours
     
-    # •Instante do envio ou recebimento
-    # • Envio ou recebimento
-    # • Tipo de mensagem (de acordo com o protocolo)
-    # • Tamanho de bytes total
-    # •Pacote enviado (caso tipo 3)
-    # • Total de pacotes (caso tipo 3 )
-    # • CRC do payload para mensagem tipo 3 (caso tenha implementado)
-
-    #29/09/2020 13:34:23.089 / envio / 3 / 128 / 1 / 23/ F23F
 
     def clientLog(self,action,type,size,sentPckg,totalPckg, CRC):
         char = " / "
@@ -98,7 +89,6 @@ class Client:
         return handshakeMessage
 
     def sendHandshake(self,handshake):
-        # 29/09/2020 13:34:23.089 / envio / 3 / 128 / 1 / 23/ F23F
         TentarNovamente = True
         HandshakeDeuCerto = False
 
@@ -132,7 +122,6 @@ class Client:
                 HandshakeDeuCerto = True
                 TentarNovamente = False
 
-            # quando o server não responde, essa resposta é autogerada
             else:
                 resposta = input("Tentar novamente? S/N ")
                 if resposta == "S":
@@ -182,10 +171,8 @@ class Client:
             else:
                 currentPacks = int(n+1).to_bytes(1, byteorder="big")
 
-            # print("ESSE É O CURRENTPACK: {0}".format(currentPacks))
 
             lastSucessPack = n.to_bytes(1, byteorder='big')
-            #Enviando o tamanho do payload do próximo pacote
 
             if self.forcarErroNbytes:
                 pacote_atual = packageList[n]
@@ -199,16 +186,15 @@ class Client:
                 print("BYTES ERRADOS:{0}".format(pacote))
                 self.forcarErroNbytes = False
             else:
-                print("ESSE É O TAMANHO DO PACOTE UAI:{0}".format(len(packageList[n])))
-                datah5_payloadSize = (len(packageList[n])).to_bytes(1, byteorder="big") 
-                print("ESSE É O TAMANHO PACOTE EM BYTES:{0}".format(datah5_payloadSize))
-                crc = binascii.crc_hqx(packageList[n], 0).to_bytes(2,'big')
-                print("CRC RAW mesmo : {0}".format(crc))
+                currentPackInt = int.from_bytes(currentPacks, byteorder="big")
+                print("ESSE É O TAMANHO DO PACOTE:{0}".format(len(packageList[currentPackInt-1])))
+                datah5_payloadSize = (len(packageList[currentPackInt-1])).to_bytes(1, byteorder="big") 
+                print("ESSE É O TAMANHO DO PACOTE EM BYTES:{0}".format(datah5_payloadSize))
+                crc = binascii.crc_hqx(packageList[currentPackInt-1], 0).to_bytes(2,'big')
                 print(f"\nO CRC É: {binascii.hexlify(crc)}")
                 Head = self.head(self.messageType3, self.idSensor, self.idServer, lenPacks_bin, currentPacks, datah5_payloadSize, self.byteVazio, lastSucessPack, crc)
                 print("Esse é o HEAD: {0}".format(Head))
-                pacote = Head + packageList[n] + self.EOP
-            # datagramas.append(pacote)
+                pacote = Head + packageList[currentPackInt-1] + self.EOP
             
             print("Vamos transmitir: {0} bytes".format(len(pacote)))
 
@@ -247,10 +233,10 @@ class Client:
                 return
 
     def logToFileClient(self):
-        # if os.path.exists('clientFile.txt'):
-        #     os.remove('clientFile.txt')
+        if os.path.exists('clientFile.txt'):
+            os.remove('clientFile.txt')
 
-        with open('ClientCRCErro.txt','w') as s:
+        with open('clientFile.txt','w') as s:
             for i in range(len(self.ClientLog)):
                 s.write("\n")
                 s.write(self.ClientLog[i])

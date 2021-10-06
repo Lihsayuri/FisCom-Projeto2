@@ -40,7 +40,7 @@ class Server:
         self.ServerLog = []
 
         self.timer2Reset = False
-        self.forcarCrcErrado = True
+        self.forcarCrcErrado = False
 
         self.messageType2 = b'\x02'  #server recebeu mensagem do tipo 1 com identificador correto
         self.messageType4 = b'\x04' # servidor dizendo recebeu pacote corretamente, tudo perfeito
@@ -102,8 +102,6 @@ class Server:
             if not self.timer2Reset:
                 timer2 = time.time()
 
-            # os mesmos 2 bytes que foram enviados vão ser recebidos aqui: que são exatamente o tamanho total de byte
-
             txBufferHandshake, tRxHandshake, self.timer2Reset= self.com2.getData(14)  
             self.ServerLog.append(self.serverLog("receb", int.from_bytes(txBufferHandshake[0:1], byteorder="big"), len(txBufferHandshake), "", "", ""))
 
@@ -131,6 +129,19 @@ class Server:
                 self.com2.disable()
                 break
         return HandshakedeuCerto
+
+    def ReenviarPacoteServer(self):
+        if self.sinal_verde== b'': 
+            lastPackSucessfully = self.byteVazio
+        else:
+            lastPackSucessfully = (self.sinal_verde[7]).to_bytes(1, byteorder="big")
+        CurrentPack = int.from_bytes(lastPackSucessfully, byteorder="big")+1
+        CurrentPackByte = CurrentPack.to_bytes(1, byteorder="big")
+
+        CurrentPackDatagrama = self.head(self.messageType6, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, CurrentPackByte, lastPackSucessfully, self.crcVazio)+ self.EOP
+        print(CurrentPackDatagrama)
+        self.com2.sendData(CurrentPackDatagrama)
+        self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", "", ""))
 
     def conferindoMensagem(self):
         dataReceived = []
@@ -225,10 +236,6 @@ class Server:
 
             print("Número total de pacotes :{0}\n".format(nTotalPacks))
 
-            # sinal_verde = b'HEAD\x01/\x01\x00\x00\x00' + b'\x0F'+ EOP
-
-            # if self.forcarErroNPacks:
-            #     nCurrentPack -=1
 
             if nCurrentPack == (nOldPackage + 1) and EOP_confere == self.EOP and crc_Client == crc_Server:
                 # CurrentPack passa a ser o antigo package recebido com sucesso
@@ -245,56 +252,23 @@ class Server:
                     dataReceived.append(txPack)
                     self.com2.sendData(self.sinal_verde)
                     self.ServerLog.append(self.serverLog("envio", int.from_bytes(self.sinal_verde[0:1], byteorder="big"), len(self.sinal_verde), "", "", ""))
-
                     nOldPackage+= 1
 
 
-            # elif nCurrentPack != (nOldPackage + 1) or EOP != b'\x00\x00\x00\x01':
             else:
                 if nCurrentPack != (nOldPackage + 1) and EOP_confere == self.EOP:
                     print("Recebi o pacote errado!")
                     print("O Client vai ter que me enviar o mesmo pacote\n")
-                    if self.sinal_verde== b'': 
-                        lastPackSucessfully = self.byteVazio
-                    else:
-                        lastPackSucessfully = (self.sinal_verde[7]).to_bytes(1, byteorder="big")
-                    CurrentPack = int.from_bytes(lastPackSucessfully, byteorder="big")+1
-                    CurrentPackByte = CurrentPack.to_bytes(1, byteorder="big")
-
-                    CurrentPackDatagrama = self.head(self.messageType6, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, CurrentPackByte, lastPackSucessfully, self.crcVazio)+ self.EOP
-                    print(CurrentPackDatagrama)
-                    self.com2.sendData(CurrentPackDatagrama)
-                    self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", "", ""))
+                    self.ReenviarPacoteServer()
 
                 elif EOP_confere!= self.EOP:
                     print("Recebi o número de bytes errado! O EOP está fora de ordem")
                     print("O client vai ter que me reenviar o pacote\n")
-                    if self.sinal_verde== b'': 
-                        lastPackSucessfully = self.byteVazio
-                    else:
-                        lastPackSucessfully = (self.sinal_verde[7]).to_bytes(1, byteorder="big")
-                    CurrentPack = int.from_bytes(lastPackSucessfully, byteorder="big")+1
-                    CurrentPackByte = CurrentPack.to_bytes(1, byteorder="big")
-
-                    CurrentPackDatagrama = self.head(self.messageType6, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, CurrentPackByte, lastPackSucessfully, self.crcVazio)+ self.EOP
-                    print(CurrentPackDatagrama)
-                    self.com2.sendData(CurrentPackDatagrama)
-                    self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", "", ""))
+                    self.ReenviarPacoteServer()
 
                 elif crc_Client != crc_Server:
                     print("ERRO... CRC calculado pelo Server não é o mesmo calculado pelo Client")
-                    if self.sinal_verde== b'': 
-                        lastPackSucessfully = self.byteVazio
-                    else:
-                        lastPackSucessfully = (self.sinal_verde[7]).to_bytes(1, byteorder="big")
-                    CurrentPack = int.from_bytes(lastPackSucessfully, byteorder="big")+1
-                    CurrentPackByte = CurrentPack.to_bytes(1, byteorder="big")
-
-                    CurrentPackDatagrama = self.head(self.messageType6, self.idSensor, self.idClient, self.byteVazio, self.byteVazio, self.byteVazio, CurrentPackByte, lastPackSucessfully, self.crcVazio)+ self.EOP
-                    print(CurrentPackDatagrama)
-                    self.com2.sendData(CurrentPackDatagrama)
-                    self.ServerLog.append(self.serverLog("envio", int.from_bytes(CurrentPackDatagrama[0:1], byteorder="big"), len(CurrentPackDatagrama), "", "", ""))
-
+                    self.ReenviarPacoteServer()
 
         return dataReceived
     
@@ -310,18 +284,17 @@ class Server:
         print(organizedData)
 
         print(self.ServerLog)
-        # encoding = 'utf-8'
-        # Criou o arquivoooooooo YAAAAAAAAAY
+
         with open('receivedFile.txt','wb') as f:
             f.write(organizedData)
 
         return organizedData
 
     def logToFileServer(self):
-        # if os.path.exists('serverFile.txt'):
-        #     os.remove('serverFile.txt')
+        if os.path.exists('serverFile.txt'):
+            os.remove('serverFile.txt')
 
-        with open('ServerCRCErro.txt','w') as s:
+        with open('serverFile.txt','w') as s:
             for i in range(len(self.ServerLog)):
                 s.write("\n")
                 s.write(self.ServerLog[i])
