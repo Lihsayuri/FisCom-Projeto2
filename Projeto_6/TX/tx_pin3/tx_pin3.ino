@@ -20,5 +20,5 @@ void loop() {
 
 
 void transmit_byte() {
-  sw_uart_write_byte(&uart, 'X');
+  sw_uart_write_byte(&uart, 'a');
 }
