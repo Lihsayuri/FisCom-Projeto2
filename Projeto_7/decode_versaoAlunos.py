@@ -1,33 +1,29 @@
-#!/usr/bin/env python3
-"""Show a text-mode spectrogram using live microphone data."""
-
 #Importe todas as bibliotecas
-
 
 import numpy as np
 import sounddevice as sd
-# import matplotlib.pyplot as plt
-# from scipy.fftpack import fft
-# from scipy import signal as window
+import matplotlib.pyplot as plt
+from scipy.fftpack import fft
+from scipy import signal as window
 from suaBibSignal import signalMeu
-from time import *
+from time import sleep
+import peakutils
 
 
-#funcao para transformas intensidade acustica em dB
+#Função para transformar intenidade acústica em dB
 def todB(s):
     sdB = 10*np.log10(s)
     return(sdB)
-
 
 def main():
  
     #declare um objeto da classe da sua biblioteca de apoio (cedida)    
     signal = signalMeu()
 
-    #declare uma variavel com a frequencia de amostragem, sendo 44100
+    #declare uma variável com a frequência de amostragem, sendo 44100
     Fs = 44100
     
-    #voce importou a bilioteca sounddevice como, por exemplo, sd. entao
+    #você importou a bilioteca sounddevice como, por exemplo, sd. então
     # os seguintes parametros devem ser setados:
     
     sd.default.samplerate = Fs #taxa de amostragem
@@ -35,47 +31,61 @@ def main():
     # duration = #tempo em segundos que ira aquisitar o sinal acustico captado pelo mic
 
 
-    # faca um printo na tela dizendo que a captacao comecará em n segundos. e entao 
+    # faca um print na tela dizendo que a captação começará em n segundos. e então 
     #use um time.sleep para a espera
     print("A captação começará em 2 segundos")
-    time.sleep(2)
+    sleep(2)
    
-   #faca um print informando que a gravacao foi inicializada
+   #faça um print informando que a gravação foi inicializada
     print("A gravação foi inicializada")
    
-   #declare uma variavel "duracao" com a duracao em segundos da gravacao. poucos segundos ... 
-   #calcule o numero de amostras "numAmostras" que serao feitas (numero de aquisicoes)
-   
-    audio = sd.rec(int(numAmostras), freqDeAmostragem, channels=1)
+   #declare uma variável "duração" com a duração em segundos da gravação. poucos segundos ... 
+   #calcule o número de amostras "numAmostras" que serão feitas (número de aquisições)
+
+    T = 3  #analise sua variavel "audio". pode ser um vetor com 1 ou 2 colunas, lista ...
+    numAmostras = T*Fs #grave uma variavel com apenas a parte que interessa (dados)
+
+    audio = sd.rec(int(numAmostras), Fs, channels=1)
     sd.wait()
     print("...     FIM")
-    
-    #analise sua variavel "audio". pode ser um vetor com 1 ou 2 colunas, lista ...
-    #grave uma variavel com apenas a parte que interessa (dados)
-    
 
+    #loadsound()
+    
+    sd.playrec(audio)
+    
+    sd.wait()
+    
+    # x, y=signal.calcFFT(audio, Fs)
+    
     # use a funcao linspace e crie o vetor tempo. Um instante correspondente a cada amostra!
-    t = np.linspace(inicio,fim,numPontos)
+    t = np.linspace(0,2*T,T*Fs)
 
     # plot do gravico  áudio vs tempo!
-   
+    plt.subplot(1,2,1)
+    plt.plot(t[:200], audio[:200])
+    plt.title("Som gravado")
+    plt.autoscale(enable=True, axis='both', tight=True)
     
+    y = audio[:200]
     ## Calcula e exibe o Fourier do sinal audio. como saida tem-se a amplitude e as frequencias
-    xf, yf = signal.calcFFT(y, fs)
+    xf, yf = signal.calcFFT(y, Fs)
+    plt.subplot(1,2,2)
     plt.figure("F(y)")
     plt.plot(xf,yf)
     plt.grid()
     plt.title('Fourier audio')
     
-
     #esta funcao analisa o fourier e encontra os picos
     #voce deve aprender a usa-la. ha como ajustar a sensibilidade, ou seja, o que é um pico?
     #voce deve tambem evitar que dois picos proximos sejam identificados, pois pequenas variacoes na
     #frequencia do sinal podem gerar mais de um pico, e na verdade tempos apenas 1.
-   
-    index = peakutils.indexes(,,)
-    
+    y_vamosver, x = signal.calcFFT(audio[:200], Fs)
+    index = peakutils.indexes(y_vamosver, thres=0.2, min_dist=10)
+    # print(yf)
+    # index=peakutils.indexes(yf, thres=0.2, min_dist=10)
+    print(index)
     #printe os picos encontrados! 
+    # print()
     
     #encontre na tabela duas frequencias proximas às frequencias de pico encontradas e descubra qual foi a tecla
     #print a tecla.

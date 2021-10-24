@@ -1,12 +1,10 @@
-
-
 #importe as bibliotecas
 import numpy as np
 import sounddevice as sd
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from os import sys
 from suaBibSignal import signalMeu
-# import soundfile as sf
+import soundfile as sf
 
 def signal_handler(signal, frame):
         print('You pressed Ctrl+C!')
@@ -89,24 +87,29 @@ def main():
     #printe o grafico no tempo do sinal a ser reproduzido
     # reproduz o som
     # sd.play(sine, Fs)
-    # Exibe gráficos
-    # print('Plotando os gráficos')
+    #  Exibe gráficos
+    print('Plotando os gráficos')
+    plt.figure()
+    plt.plot(t, y, '.-')
+    plt.show()
+    # aguarda fim do audio
+    sd.wait()
+
+
+    # print('Plotando gráfico Fourier')
     # plt.figure()
     # plt.plot(t, y, '.-')
     # plt.show()
-    # aguarda fim do audio
-    sd.wait()
 
     def getfile(digit):
         digit = str(digit)
         filename= "digit.wav"
         return filename
-
     
+    filename=getfile(digit)
+    print(f'Salvando o arquivo de som em: {filename}')
+    sf.write(filename, y, Fs) 
 
-    # filename=getfile(digit)
-    # print(f'Salvando o arquivo de som em: {filename}')
-    # sf.write(filename, y, Fs) 
 
 if __name__ == "__main__":
     main()
