@@ -35,3 +35,6 @@ def achaTecla(index, x):
             character = tecla
     
     print(f"\n[+]---Tecla referente ao som gravado: {character}")
+
+        # for i in range(0,arrayAudio.shape[0]):
+        # arrayAudio[i] = audio[i][0]
