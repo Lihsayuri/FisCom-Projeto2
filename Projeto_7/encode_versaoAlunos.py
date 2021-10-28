@@ -3,6 +3,7 @@ import numpy as np
 import sounddevice as sd
 import matplotlib.pyplot as plt
 from os import sys
+from logging import info
 from suaBibSignal import signalMeu
 import soundfile as sf
 
@@ -42,8 +43,8 @@ def main():
 
     # F = 440 #Hz
     A = 1 #amplitude
-    T = 1 # tempo em que o seno será gerado
-    t = np.linspace(0, 2*T, T*Fs)
+    T = 2 # tempo em que o seno será gerado
+    t = np.linspace(0, 2*T, T*Fs) #Ex: 1000 bits por segundo, 1 segudo amostra 1000 vezes. Então 1segundo amostra Fs vezes. 
     
     # duration = 
     #tempo em segundos que ira emitir o sinal acustico
@@ -63,23 +64,38 @@ def main():
 
     y=y1+y2
     
-    # info(f'Gerando tom referente ao símbolo: ')
-    sd.play(y, Fs)
-#relativo ao volume. Um ganho alto pode saturar sua placa... comece com .3    
-    gainX  = 0.3
-    gainY  = 0.3
-
 
     print("Gerando Tons base")
+
+    info(f'Gerando tom referente ao símbolo: {digit} ')
+    print("Gerando Tom referente ao símbolo : {}".format(digit))
+
+    sd.play(y, Fs)
+
+    #relativo ao volume. Um ganho alto pode saturar sua placa... comece com .3    
+    gainX  = 0.3
+    gainY  = 0.3
     
     #gere duas senoides para cada frequencia da tabela DTMF ! Canal x e canal y 
     #use para isso sua biblioteca (cedida)
     #obtenha o vetor tempo tb.
     #deixe tudo como array
 
+    info('Plotando os gráficos')
+    plt.figure()
+    plt.plot(t[:300], y1[:300], 'b--', alpha=0.5, label= (f'{freq1}Hz'))
+    plt.plot(t[:300], y2[:300], 'g--', alpha=0.5, label=(f'{freq2}Hz'))
+    plt.plot(t[:300], y[:300], 'k', alpha=0.75, label=(f'Soma de {freq1}Hz e {freq2}Hz'))
+    plt.legend()
+    plt.title(f'Frequências do símbolo {digit}')
+    plt.grid(True)
+    plt.autoscale(enable=True, axis='both', tight=True)
+    plt.show()
+    
+    sd.wait()
+
     #printe a mensagem para o usuario teclar um numero de 0 a 9. 
     #nao aceite outro valor de entrada.
-    print("Gerando Tom referente ao símbolo : {}".format(digit))
     
     
     #construa o sunal a ser reproduzido. nao se esqueca de que é a soma das senoides
@@ -90,7 +106,7 @@ def main():
     #  Exibe gráficos
     print('Plotando os gráficos')
     plt.figure()
-    plt.plot(t, y, '.-')
+    plt.plot(t[:300], y[:300], '.-')
     plt.show()
     # aguarda fim do audio
     sd.wait()

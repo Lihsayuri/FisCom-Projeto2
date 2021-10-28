@@ -23,10 +23,15 @@ class signalMeu:
         # x frequencia e y amplitudes
         # https://docs.scipy.org/doc/scipy/reference/tutorial/fftpack.html
         N  = len(signal)
-        W = window.hamming(N)
+        print(N)
         T  = 1/fs
+        # print("Esse é o período de amostragem:{0}".format(T))
+        W = window.hamming(N)
+        # print(W)
+        # print("ESSE É O W:".format(W))
         xf = np.linspace(0.0, 1.0/(2.0*T), N//2)
         yf = fft(signal*W)
+        # print(yf)
         return(xf, np.abs(yf[0:N//2]))
 
     def plotFFT(self, signal, fs):
