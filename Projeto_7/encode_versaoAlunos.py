@@ -59,14 +59,16 @@ def main():
     t = np.linspace(0, 2*T, T*Fs) # Ex: 1000 bits por segundo, 1 segudo amostra 1000 vezes. Então 1 segundo amostra Fs vezes. 
     # t   = np.linspace(-T/2,T/2,T*Fs)
 
+    gainX  = 0.3
+    gainY  = 0.3
 
     # Construa o sinal a ser reproduzido. Não se esqueça de que é a soma das senoides
 
     freq1, freq2 = gerarSenoSinal(digit, dictFrequencies)    
     print("Essa é a frequência1: {0}".format(freq1))
     print("Essa é a frequência2: {0}".format(freq2))    
-    x1, y1 = signal.generateSin(freq1, A, T, Fs)
-    x2, y2 = signal.generateSin(freq2, A, T, Fs)
+    x1, y1 = signal.generateSin(freq1, A*gainX, T, Fs)
+    x2, y2 = signal.generateSin(freq2, A*gainX, T, Fs)
 
     y=y1+y2
 
@@ -84,8 +86,7 @@ def main():
     
 
     # Relativo ao volume. Um ganho alto pode saturar sua placa... comece com .3    
-    gainX  = 0.3
-    gainY  = 0.3
+
     
     # Gere duas senoides para cada frequência da tabela DTMF! Canal X e canal Y 
     # Printe o gráfico no tempo do sinal a ser reproduzido

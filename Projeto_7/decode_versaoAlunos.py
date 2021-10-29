@@ -115,7 +115,7 @@ def main():
     # Você deve aprender a usá-la. Há como ajustar a sensibilidade, ou seja, o que é um pico?
     # Você deve também evitar que dois picos próximos sejam identificados, pois pequenas variações na
     # frequência do sinal podem gerar mais de um pico, e na verdade temos apenas 1. 
-    index = peakutils.indexes(y, thres=0.2, min_dist=10)
+    index = peakutils.indexes(y, thres=0.3, min_dist=10)
 
     # Printando picos encontrados
 
