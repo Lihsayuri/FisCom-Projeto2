@@ -23,14 +23,6 @@ def normalizeAudio(wavfile):
         
         return wavfile*(1/maxAbs)
 
-# def low_pass_filter(samplerate, cutoff, audioNormalizado):
-#         # https://stackoverflow.com/questions/24920346/filtering-a-wav-file-using-python
-#         freqRatio = cutoff/samplerate
-#         N = int(math.sqrt(0.196201 + freqRatio**2) / freqRatio)
-#         win = np.ones(N)
-#         win *= 1.0/N
-#         return sg.lfilter(win, [1], audioNormalizado)
-
 
 def generateSin(freq, amplitude, time, fs):
         n = time*fs
