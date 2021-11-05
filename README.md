@@ -10,3 +10,4 @@ Até agora:
 * Projeto Protocolo ponto a ponto (com CRC: Projeto 5) :heavy_check_mark:
 * Projeto Serialização UART (Projeto 6) :heavy_check_mark:
 * Projeto DTMF (Projeto 7) :heavy_check_mark:
+* Projeto Modulação AM (Projeto 8) :heavy_check_mark:
