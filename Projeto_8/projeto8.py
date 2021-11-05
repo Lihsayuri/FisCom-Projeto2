@@ -27,16 +27,6 @@ def todB(s):
     sdB = 10*np.log10(s)
     return(sdB)
 
-def gerarSenoSinal(digit, dictFrequencias):
-    if digit in dictFrequencias:
-        return dictFrequencias[digit][0], dictFrequencias[digit][1]
-    else:
-        print("Ops, o termo teclado não existe!")
-
-def getfile(yAudio, Fs, nome):
-    filename= nome+".wav"
-    print(f'Salvando o arquivo de som em: {filename}')
-    sf.write(filename, yAudio, Fs) 
 
 def main():
     print("Inicializando encoder")
@@ -51,83 +41,62 @@ def main():
     numAmostras = T*Fs 
     t = np.linspace(0, 2*T, T*Fs) # Ex: 1000 bits por segundo, 1 segudo amostra 1000 vezes. Então 1 segundo amostra Fs vezes. 
 
+    print(f"\nO áudio que faremos a análise já foi gravado com o Fs de 44100Hz!\n")
+    print(f"\nÉ um áudio de saudação de um colega para o outro.\n")
+    print(f"\nA mensagem gravada é: Oi Henrique!\n")
+    print(f"\nOBS: gravei o áudio para passar os 4kHz e poder ver o filtro funcionando")
+    audio, samplerate = sf.read('audio-saudacao.wav')
 
-    print("A captação começará em 4 segundos")
-    sleep(4)
-   
-    print("A gravação foi inicializada")
-
-
-    audio = sd.rec(int(numAmostras), Fs, channels=1)
-    sd.wait()
-    print("...     FIM DA GRAVAÇÃO")
-    
     sd.playrec(audio)
     sleep(2)
 
-    print("Áudio já gravado e re-tocado")
-
-
-    print("Salvando o audio gravado no file audio-saudacao")
-    getfile(audio, Fs, "audio-saudacao")
+    print("Tocando o áudio já gravado para conferir")
 
     # Gráfico do aúdio gravado pelo tempo 
     plt.figure()
-    plt.plot(t, audio, 'b--', alpha=0.5)
+    plt.plot(t, audio, alpha=0.5, color="darkorange")
     plt.title(f'Áudio original gravado no tempo')
     plt.grid(True)
     plt.show()
 
     #---------------------------------------------------------------------------
-
-    # Começamos apenas transformando o formato do áudio para uma lista normal, já que é uma lista de listas originalmente
-    listaDoAudio = []  # Se eu pegar apenas audio[i], ele retorna o número dentro de uma lista. Eu quero apenas o número. 
-    for i in range(0, numAmostras):
-        listaDoAudio.append(audio[i][0])
-
     
-    # FOURIER do sinal original, apenas para ver as frequências gravadas
-    xOriginal, yOriginal = signal.calcFFT(listaDoAudio, Fs)
+    # Com o áudio original fizemos o FOURIER do sinal, apenas para ver as frequências gravadas
+    xOriginal, yOriginal = signal.calcFFT(audio, Fs)
     plt.figure()
-    plt.plot(xOriginal, yOriginal, 'b--', alpha=0.5)
+    plt.plot(xOriginal, yOriginal, alpha=0.5, color="darkorange")
     plt.title(f'FOURIER Sinal de áudio original (x: frequências, y: amplitude)')
     plt.show()
 
 
-    # AudioNormalizado = yfiltro/maior_frequencia
+    # Normalizamos o áudio com uma função 
     AudioNormalizado = normalizeAudio(audio)
 
     print(f"\nTocando o audio normalizado\n")
     sd.play(AudioNormalizado, Fs)
 
-    # O audio normalizado provém do áudio que o formato é diferente do formato que precisa para usar nas funçõe de Fourier e no filtro,
-    #  então por isso esse "for"
-    listaDoAudioNormalizado = []  
-    for i in range(0, numAmostras):
-        listaDoAudioNormalizado.append(AudioNormalizado[i][0])
-
     #Gráfico 1: Sinal de áudio original normalizado – domínio do tempo. 
     plt.figure()
-    plt.plot(t, AudioNormalizado, 'b--', alpha=0.5, color= "purple")
+    plt.plot(t, AudioNormalizado, alpha=0.5, color= "darkorange")
     plt.title(f'Gráfico 1: Áudio original normalizado no tempo.')
     plt.savefig("Audio_Original_Normalizado_No_Tempo.jpg")
     plt.show()
 
     # FOURIER do sinal original, apenas para ver as frequências gravadas
-    xNormal, yNormal = signal.calcFFT(listaDoAudioNormalizado, Fs)
+    xNormal, yNormal = signal.calcFFT(AudioNormalizado, Fs)
     plt.figure()
-    plt.plot(xOriginal, yOriginal, 'b--', alpha=0.5)
+    plt.plot(xOriginal, yOriginal, alpha=0.5, color="darkorange")
     plt.title(f'FOURIER do sinal de áudio original normalizado (x: frequências, y: amplitude)')
     plt.show()
 
     # Filtrando o áudio acima de 4KHz
-    yfiltro = LPF(listaDoAudioNormalizado, 4000, Fs)
+    yfiltro = LPF(AudioNormalizado, 4000, Fs)
     sd.play(yfiltro)
     # sd.wait()
 
     #Gráfico 2: Sinal de áudio filtrado – domínio do tempo. (repare que não se nota diferença). 
     plt.figure()
-    plt.plot(t, yfiltro, 'b--', alpha=0.5, color= "purple")
+    plt.plot(t, yfiltro, alpha=0.5, color= "darkorange")
     plt.title(f'Gráfico 2: Áudio filtrado (já normalizado) no tempo')
     plt.savefig("Audio_Filtrado_E_Normalizado_No_Tempo.jpg")
     plt.show()
@@ -135,7 +104,7 @@ def main():
     #Gráfico 3: Sinal de áudio normalizado filtrado – domínio da frequência (x: frequências, y: amplitude). 
     xfiltrado, yfiltrado = signal.calcFFT(yfiltro, Fs)
     plt.figure()
-    plt.plot(xfiltrado, yfiltrado, 'b--', alpha=0.5, color= "purple")
+    plt.plot(xfiltrado, yfiltrado, alpha=0.5, color= "darkorange")
     plt.title(f'Gráfico 3: Áudio filtrado (já normalizado) – domínio da frequência')
     plt.savefig("Audio_Filtrado_E_Normalizado_Dominio_Da_Frequencia.jpg")
     plt.show()
@@ -152,7 +121,7 @@ def main():
     xPortadora, yPortadora = generateSin(freqPortadora, A, T, Fs)
     plt.figure()
     plt.title('Seno da portadora de 14KHz')
-    plt.plot(xPortadora[0:500], yPortadora[0:500])
+    plt.plot(xPortadora[0:500], yPortadora[0:500], color="darkorange")
     plt.grid()
     plt.show()
     # portadora = 1*np.cos(2*pi*14000*t)
@@ -161,7 +130,7 @@ def main():
     audioModulado = yfiltro * yPortadora
     plt.figure("AM")
     plt.title('Gráfico 4: Áudio modulado no tempo')
-    plt.plot(t[0:500], audioModulado[0:500], color= "purple")
+    plt.plot(t[0:500], audioModulado[0:500], color= "darkorange")
     plt.grid()
     plt.savefig("Audio_Modulado_No_Tempo.jpg")
     plt.show()
@@ -173,7 +142,7 @@ def main():
 
     # Gráfico 5: sinal de áudio modulado – domínio da frequência. (entre 10kHz e 18kHz)
     xModulado, yModulado = calcFFT(audioModulado, Fs)
-    plt.plot(xModulado, np.abs(yModulado), label="Áudio modulado", color="black")
+    plt.plot(xModulado, np.abs(yModulado), color="darkorange")
     plt.title("Gráfico 5: Áudio modulado – domínio da frequência (entre 10kHz e 18kHz)")
     plt.grid()
     plt.savefig("Audio_Modulado_Dominio_Da_Frequencia.jpg")
@@ -186,18 +155,17 @@ def main():
     print(f"\nDemodulando o áudio\n")
     audioDemod = yPortadora*audioModulado
 
-    # Gráfico 6: sinal de áudio demodulado – domínio do tempo
-    plt.plot(t, audioDemod, color="purple")
-    plt.title("Gráfico 6: Áudio demodulado no tempo")
+    # Gráfico do sinal de áudio demodulado – domínio do tempo
+    plt.plot(t, audioDemod, color="darkorange")
+    plt.title("Áudio demodulado no tempo")
     plt.grid()
-    plt.savefig("Audio_Demodulado_No_Tempo.jpg")
     plt.show()
 
 
-    # Gráfico 7: sinal de áudio demodulado – domínio da frequência. (verifique que reobteve as baixas frequências)
+    # Gráfico 6: sinal de áudio demodulado – domínio da frequência. (verifique que reobteve as baixas frequências)
     xDemod, yDemod = calcFFT(audioDemod, Fs)
-    plt.plot(xDemod, np.abs(yDemod), color="black")
-    plt.title("Gráfico 7: Áudio demodulado – domínio da frequência.")
+    plt.plot(xDemod, np.abs(yDemod), color="darkorange")
+    plt.title("Gráfico 6: Áudio demodulado – domínio da frequência.")
     plt.grid()
     plt.savefig("Audio_Demodulado_Dominio_Da_Frequencia.jpg")
     plt.show()
@@ -208,8 +176,8 @@ def main():
 
     # Gráfico 8: sinal de áudio demodulado e filtrado – domínio da frequência.
     xDemodFiltrado, yDemodFiltrado = calcFFT(audioDemodFiltered, Fs)
-    plt.plot(xDemodFiltrado, np.abs(yDemodFiltrado), color="black")
-    plt.title("Gráfico 8: Áudio demodulado e filtrado – domínio da frequência.")
+    plt.plot(xDemodFiltrado, np.abs(yDemodFiltrado), color="darkorange")
+    plt.title("Gráfico 7: Áudio demodulado e filtrado – domínio da frequência.")
     plt.grid()
     plt.savefig("Audio_Demodulado_E_Filtrado_Dominio_Da_Frequencia.jpg")
     plt.show()
